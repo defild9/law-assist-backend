@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Delete,
+  Get,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,39 +20,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-
-  @Post()
-  @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({ status: 201, description: 'User created successfully' })
-  @ApiResponse({ status: 409, description: 'Email is already in use' })
-  @ApiResponse({ status: 500, description: 'Failed to create user' })
-  async createUser(@Body() createUserDto: CreateUserDto) {
-    try {
-      const user = await this.userService.createUser(createUserDto);
-
-      const { password, ...result } = user.toObject();
-      return {
-        statusCode: HttpStatus.CREATED,
-        message: 'User created successfully',
-        data: result,
-      };
-    } catch (error) {
-      if (error instanceof ConflictException) {
-        throw new HttpException(
-          {
-            statusCode: HttpStatus.CONFLICT,
-            message: 'Email is already in use',
-          },
-          HttpStatus.CONFLICT,
-        );
-      }
-
-      throw new HttpException(
-        'Failed to create user',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an existing user' })

@@ -14,13 +14,15 @@ async function bootstrap() {
     .setTitle('LawAssist')
     .setDescription('LawAssist API description')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, documentFactory);
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('port');
+  const port = configService.get<number>('PORT');
+
   await app.listen(port || 3000);
 }
 bootstrap();

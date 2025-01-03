@@ -8,7 +8,8 @@ export class UpdateUserDto {
     required: true,
   })
   @IsEmail()
-  email: string;
+  @IsOptional()
+  email?: string;
 
   @ApiProperty({
     description: "URL to the user's profile picture",
@@ -18,4 +19,8 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   profile_picture?: string;
+
+  @IsOptional()
+  @IsString()
+  refreshToken?: string;
 }

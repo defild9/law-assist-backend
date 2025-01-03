@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -14,14 +15,30 @@ import { UpdateUserDto } from './dto/update-user.dto';
 @Injectable()
 export class UserService {
   private readonly saltRounds: number;
+
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private configService: ConfigService,
   ) {
-    this.saltRounds = this.configService.get<number>('saltRounds');
+    this.saltRounds = this.configService.get<number>('saltRounds') || 10;
   }
 
-  async createUser(createUserDto: CreateUserDto) {
+  async findByEmail(email: string): Promise<User> {
+    if (!email) {
+      throw new BadRequestException('Email must be provided');
+    }
+    const user = await this.userModel.findOne({ email }).exec();
+    if (!user) {
+      throw new NotFoundException('User not found with the provided email');
+    }
+    return user;
+  }
+
+  async createUser(createUserDto: CreateUserDto): Promise<Partial<User>> {
+    if (!createUserDto.email || !createUserDto.password) {
+      throw new BadRequestException('Email and password are required');
+    }
+
     const existingUser = await this.userModel
       .findOne({ email: createUserDto.email })
       .exec();
@@ -30,20 +47,31 @@ export class UserService {
       throw new ConflictException('Email is already in use');
     }
 
-    const hashedPasswords = await bcrypt.hash(
+    const hashedPassword = await bcrypt.hash(
       createUserDto.password,
       this.saltRounds,
     );
 
     const newUser = new this.userModel({
       ...createUserDto,
-      password: hashedPasswords,
+      password: hashedPassword,
     });
 
-    return newUser.save();
+    const savedUser = await newUser.save();
+
+    const { password, ...userWithoutPassword } = savedUser.toObject();
+
+    return userWithoutPassword;
   }
 
-  async updateUser(userId: string, updateUserDto: UpdateUserDto) {
+  async updateUser(
+    userId: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<User> {
+    if (!userId) {
+      throw new BadRequestException('User ID must be provided');
+    }
+
     const user = await this.userModel.findById(userId).exec();
 
     if (!user) {
@@ -65,6 +93,10 @@ export class UserService {
   }
 
   async deleteUser(userId: string): Promise<void> {
+    if (!userId) {
+      throw new BadRequestException('User ID must be provided');
+    }
+
     const user = await this.userModel.findById(userId).exec();
 
     if (!user) {
@@ -72,5 +104,37 @@ export class UserService {
     }
 
     await this.userModel.deleteOne({ _id: userId }).exec();
+  }
+
+  async findById(id: string): Promise<User> {
+    if (!id) {
+      throw new BadRequestException('User ID must be provided');
+    }
+
+    const user = await this.userModel.findById(id).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async updateRefreshToken(
+    userId: string,
+    refreshToken: string,
+  ): Promise<void> {
+    if (!userId) {
+      throw new BadRequestException('User ID must be provided');
+    }
+    if (!refreshToken) {
+      throw new BadRequestException('Refresh token must be provided');
+    }
+
+    const user = await this.userModel.findById(userId).exec();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    await this.userModel.findByIdAndUpdate(userId, { refreshToken }).exec();
   }
 }

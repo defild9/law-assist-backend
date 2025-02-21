@@ -1,4 +1,11 @@
-import { Controller, Post, Body, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Request,
+  UseGuards,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
@@ -73,5 +80,19 @@ export class AuthController {
   async logout(@Request() req) {
     const userId = req.user.userId;
     return this.authService.logout(userId);
+  }
+
+  @ApiOperation({ summary: 'User verify email' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string' },
+      },
+    },
+  })
+  @Post('verify-email')
+  async verifyEmail(@Body('token') token: string) {
+    return await this.userService.verifyUserByEmail(token);
   }
 }

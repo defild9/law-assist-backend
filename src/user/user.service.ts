@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  HttpStatus,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -11,6 +12,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { MailService } from 'src/mail/mail.service';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class UserService {
@@ -19,6 +22,7 @@ export class UserService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     private configService: ConfigService,
+    private mailService: MailService,
   ) {
     this.saltRounds = this.configService.get<number>('saltRounds') || 10;
   }
@@ -52,15 +56,23 @@ export class UserService {
       this.saltRounds,
     );
 
+    const verificationToken = randomBytes(32).toString('hex');
+
     const newUser = new this.userModel({
       ...createUserDto,
       password: hashedPassword,
+      verificationToken,
+      isVerified: false,
     });
 
     const savedUser = await newUser.save();
 
-    const { password, ...userWithoutPassword } = savedUser.toObject();
+    await this.mailService.sendVerificationEmail(
+      savedUser.email,
+      verificationToken,
+    );
 
+    const { password, ...userWithoutPassword } = savedUser.toObject();
     return userWithoutPassword;
   }
 
@@ -88,7 +100,6 @@ export class UserService {
     }
 
     await this.userModel.findByIdAndUpdate(userId, updateUserDto).exec();
-
     return this.userModel.findById(userId).select('-password').exec();
   }
 
@@ -136,5 +147,36 @@ export class UserService {
     }
 
     await this.userModel.findByIdAndUpdate(userId, { refreshToken }).exec();
+  }
+
+  async findByVerificationToken(token: string) {
+    return this.userModel.findOne({ verificationToken: token });
+  }
+
+  async verifyUserByEmail(token: string) {
+    try {
+      const user = await this.findByVerificationToken(token);
+
+      if (!user) {
+        return {
+          success: false,
+          error: 'Invalid or expired token.',
+        };
+      }
+
+      user.isEmailVerified = true;
+      user.verificationToken = null;
+      await user.save();
+
+      return {
+        success: true,
+        message: 'Email successfully verified.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'An unexpected error occurred while verifying email.',
+      };
+    }
   }
 }

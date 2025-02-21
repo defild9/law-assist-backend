@@ -26,6 +26,12 @@ export class User extends Document {
   @Prop({ default: null })
   refreshToken?: string;
 
+  @Prop({ default: false })
+  isEmailVerified: boolean;
+
+  @Prop()
+  verificationToken?: string;
+
   readonly createdAt: Date;
   readonly updatedAt: Date;
 

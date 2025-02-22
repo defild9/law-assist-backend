@@ -6,6 +6,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
+import { AiModule } from './ai/ai.module';
+import { ConversationModule } from './conversation/conversation.module';
+import { VectorStoreModule } from './vector-store/vector-store.module';
+import { LlmModule } from './llm/llm.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -24,6 +28,10 @@ import configuration from './config/configuration';
     UserModule,
     AuthModule,
     MailModule,
+    AiModule,
+    ConversationModule,
+    VectorStoreModule,
+    LlmModule,
   ],
   controllers: [AppController],
   providers: [AppService],

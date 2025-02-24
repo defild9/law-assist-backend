@@ -5,6 +5,7 @@ import {
   Request,
   UseGuards,
   HttpStatus,
+  Patch,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -13,6 +14,8 @@ import { UserService } from 'src/user/user.service';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { JwtAuthGuard } from './guards/jwt.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -94,5 +97,23 @@ export class AuthController {
   @Post('verify-email')
   async verifyEmail(@Body('token') token: string) {
     return await this.userService.verifyUserByEmail(token);
+  }
+
+  @ApiOperation({ summary: 'Send reset password link' })
+  @ApiBody({ type: ForgotPasswordDto })
+  @Post('forgot-password')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    console.log(forgotPasswordDto);
+    return this.authService.sendResetPasswordLink(forgotPasswordDto.email);
+  }
+
+  @ApiOperation({ summary: 'Reset password' })
+  @ApiBody({ type: ResetPasswordDto })
+  @Patch('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return this.userService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.newPassword,
+    );
   }
 }

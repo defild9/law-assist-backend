@@ -36,4 +36,26 @@ export class MailService {
       throw new Error('Failed to send verification email.');
     }
   }
+
+  async sendResetPasswordEmail(email: string, token: string) {
+    try {
+      const resetUrl = `${process.env.APP_URL}/auth/reset-password?token=${token}`;
+
+      await this.transporter.sendMail({
+        from: `"Password Reset" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: 'Password Reset Request',
+        text: `Click the link to reset your password: ${resetUrl}`,
+        html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`,
+      });
+
+      this.logger.log(`Password reset email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Error sending password reset email to ${email}:`,
+        error,
+      );
+      throw new Error('Failed to send password reset email.');
+    }
+  }
 }

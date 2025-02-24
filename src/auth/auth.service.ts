@@ -1,14 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
 import { User } from 'src/schemas/user.schema';
+import { randomBytes } from 'crypto';
+import { MailService } from 'src/mail/mail.service';
+import { use } from 'passport';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
+    private readonly mailService: MailService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -64,6 +72,31 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async sendResetPasswordLink(email: string) {
+    const user = await this.userService.findByEmail(email);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const verificationToken = randomBytes(32).toString('hex');
+
+    user.verificationToken = verificationToken;
+
+    user.save();
+
+    try {
+      await this.mailService.sendResetPasswordEmail(email, verificationToken);
+      return {
+        message: 'The password reset link has been sent to your email.',
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Failed to send the password reset link.',
+      );
+    }
   }
 
   async logout(userId: string) {

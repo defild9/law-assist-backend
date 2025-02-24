@@ -179,4 +179,34 @@ export class UserService {
       };
     }
   }
+
+  async resetPassword(token: string, newPassword: string) {
+    try {
+      const user = await this.findByVerificationToken(token);
+
+      if (!user) {
+        return {
+          success: false,
+          error: 'Invalid or expired token.',
+        };
+      }
+
+      const newHashedPassword = await bcrypt.hash(newPassword, this.saltRounds);
+
+      user.password = newHashedPassword;
+      user.verificationToken = null;
+
+      await user.save();
+
+      return {
+        success: true,
+        message: 'Password successfully changed.',
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'An unexpected error occurred while verifying email.',
+      };
+    }
+  }
 }

@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { console } from 'inspector';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import {
   Сonversation,
@@ -60,6 +61,80 @@ export class ConversationService {
       }
 
       return conversation;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getUserConversations(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    if (!userId) {
+      throw new NotFoundException('User ID is required');
+    }
+
+    const skip = (page - 1) * limit;
+    const [conversations, total] = await Promise.all([
+      this.conversationModel
+        .find({ userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.conversationModel.countDocuments({ userId }),
+    ]);
+
+    return {
+      conversations,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async searchConversationByMessageContent(
+    userId: string,
+    searchText: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    try {
+      const skip = (page - 1) * limit;
+
+      const results = await this.conversationModel.aggregate([
+        {
+          $lookup: {
+            from: 'messages',
+            localField: 'messages',
+            foreignField: '_id',
+            as: 'messages_details',
+          },
+        },
+        {
+          $match: {
+            userId: userId,
+            'messages_details.content': { $regex: searchText, $options: 'i' },
+          },
+        },
+        {
+          $facet: {
+            data: [{ $skip: skip }, { $limit: limit }],
+            totalCount: [{ $count: 'total' }],
+          },
+        },
+      ]);
+
+      const { data, totalCount } = results[0] || { data: [], totalCount: [] };
+      const total = totalCount[0] ? totalCount[0].total : 0;
+
+      return {
+        conversations: data,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      };
     } catch (error) {
       throw error;
     }

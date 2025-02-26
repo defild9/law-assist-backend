@@ -3,163 +3,224 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Stream Client</title>
+    <title>Test Stand</title>
     <style>
       body {
         font-family: Arial, sans-serif;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
         background-color: #f5f5f5;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
       }
-      .container {
-        background-color: white;
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .input-group {
-        margin-bottom: 1rem;
-      }
-      input[type='text'] {
+      .chat-container {
         width: 100%;
-        padding: 0.5rem;
-        font-size: 1rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        margin-bottom: 1rem;
+        max-width: 600px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
       }
-      button {
+      .messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        background-color: #f7f7f7;
+      }
+      .message {
+        margin-bottom: 15px;
+        display: flex;
+      }
+      .message.user {
+        justify-content: flex-end;
+      }
+      .message.assistant {
+        justify-content: flex-start;
+      }
+      .bubble {
+        max-width: 70%;
+        padding: 10px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      .message.user .bubble {
+        background-color: #dcf8c6;
+        color: #000;
+        border-bottom-right-radius: 0;
+      }
+      .message.assistant .bubble {
+        background-color: #ececec;
+        color: #000;
+        border-bottom-left-radius: 0;
+      }
+      .input-area {
+        display: flex;
+        border-top: 1px solid #ddd;
+      }
+      .input-area input[type='text'] {
+        flex: 1;
+        padding: 15px;
+        border: none;
+        outline: none;
+        font-size: 16px;
+      }
+      .input-area button {
+        padding: 15px 20px;
+        border: none;
         background-color: #4caf50;
         color: white;
-        padding: 0.5rem 1rem;
-        border: none;
-        border-radius: 4px;
+        font-size: 16px;
         cursor: pointer;
-        font-size: 1rem;
       }
-      button:disabled {
+      .input-area button:disabled {
         background-color: #cccccc;
-        cursor: not-allowed;
       }
-      #output {
-        white-space: pre-wrap;
-        margin-top: 1rem;
-        padding: 1rem;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        min-height: 100px;
-        background-color: #fff9e6;
-      }
-      .loading {
-        display: none;
+      #chatIdInfo {
+        padding: 10px;
+        text-align: center;
+        font-size: 13px;
         color: #666;
-        margin-left: 1rem;
-      }
-      .loading.active {
-        display: inline-block;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>AI Stream Client (Test stand)</h1>
-      <div class="input-group">
-        <form id="promptForm">
-          <input
-            type="text"
-            id="prompt"
-            placeholder="Enter your prompt here..."
-            autocomplete="off"
-          />
-          <button type="submit" id="submitBtn">Generate</button>
-          <span class="loading" id="loading">Loading...</span>
-        </form>
+    <div class="chat-container">
+      <div class="messages" id="messages"></div>
+      <div class="input-area">
+        <input
+          type="text"
+          id="prompt"
+          placeholder="Enter a message..."
+          autocomplete="off"
+        />
+        <button id="submitBtn">Send</button>
       </div>
-      <div id="output"></div>
+      <div id="chatIdInfo"></div>
     </div>
 
     <script>
+      let currentChatId = localStorage.getItem('currentChatId');
+      const chatIdInfo = document.getElementById('chatIdInfo');
+      const updateChatInfo = () => {
+        chatIdInfo.innerHTML = currentChatId
+          ? `Current Chat ID: <code>${currentChatId}</code>`
+          : 'New chat session';
+      };
+      updateChatInfo();
+
       let abortController = null;
+      const messagesContainer = document.getElementById('messages');
+      const promptInput = document.getElementById('prompt');
+      const submitBtn = document.getElementById('submitBtn');
 
-      document
-        .getElementById('promptForm')
-        .addEventListener('submit', async (event) => {
-          event.preventDefault();
-          const prompt = document.getElementById('prompt').value.trim();
-          const output = document.getElementById('output');
-          const submitBtn = document.getElementById('submitBtn');
-          const loading = document.getElementById('loading');
+      function appendMessage(role, text) {
+        const messageEl = document.createElement('div');
+        messageEl.classList.add('message', role);
+        const bubble = document.createElement('div');
+        bubble.classList.add('bubble');
+        bubble.textContent = text;
+        messageEl.appendChild(bubble);
+        messagesContainer.appendChild(messageEl);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      }
 
-          if (!prompt) {
-            alert('Please enter a prompt');
-            return;
-          }
+      async function sendMessage() {
+        const prompt = promptInput.value.trim();
+        if (!prompt) {
+          alert('Please enter a message');
+          return;
+        }
+        appendMessage('user', prompt);
+        promptInput.value = '';
+        submitBtn.disabled = true;
 
-          output.textContent = '';
-          submitBtn.disabled = true;
-          loading.classList.add('active');
+        if (abortController) {
+          abortController.abort();
+        }
+        abortController = new AbortController();
 
-          if (abortController) {
-            abortController.abort();
-          }
-          abortController = new AbortController();
-
-          try {
-            const response = await fetch(
-              'http://localhost:4000/api/conversation',
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ prompt }),
-                signal: abortController.signal,
+        try {
+          const response = await fetch(
+            'http://localhost:4000/api/conversation',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InVzZXIxQGV4YW1wbGUuY29tIiwic3ViIjoiNjdiZjA2NGU1OTc3Mjc5ZjY1MjVjMjRmIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3NDA1NzU5ODgsImV4cCI6MTc0MzE2Nzk4OH0.Co1lYlWjuKWehDuLOfthG_I7n0Jn2RpD_oXmedrj-to`,
               },
-            );
+              body: JSON.stringify({
+                prompt,
+                chatId: currentChatId,
+              }),
+              signal: abortController.signal,
+            },
+          );
 
-            if (!response.ok)
-              throw new Error(`HTTP error! status: ${response.status}`);
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
-
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-
-              // Decode the incoming chunk and accumulate in a buffer
-              buffer += decoder.decode(value, { stream: true });
-
-              // SSE events are separated by double newline (\n\n)
-              let parts = buffer.split('\n\n');
-              // Process all complete events
-              parts.slice(0, -1).forEach((part) => {
-                if (part.startsWith('data:')) {
-                  // Remove the "data:" prefix and any leading whitespace
-                  const data = part.replace(/^data:\s?/, '');
-                  output.textContent += data;
-                  output.scrollTop = output.scrollHeight;
-                }
-              });
-              // The last part may be incomplete; keep it for the next chunk
-              buffer = parts[parts.length - 1];
-            }
-          } catch (error) {
-            if (error.name !== 'AbortError') {
-              output.textContent = `Error: ${error.message}`;
-            }
-          } finally {
-            submitBtn.disabled = false;
-            loading.classList.remove('active');
-            abortController = null;
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
           }
-        });
 
-      document.getElementById('prompt').addEventListener('keydown', (event) => {
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = '';
+          let assistantBubble = null;
+
+          assistantBubble = document.createElement('div');
+          assistantBubble.classList.add('message', 'assistant');
+          const bubbleContent = document.createElement('div');
+          bubbleContent.classList.add('bubble');
+          assistantBubble.appendChild(bubbleContent);
+          messagesContainer.appendChild(assistantBubble);
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let parts = buffer.split('\n\n');
+
+            parts.slice(0, -1).forEach((part) => {
+              if (part.startsWith('data:')) {
+                const data = part.replace(/^data:\s?/, '');
+                try {
+                  const parsed = JSON.parse(data);
+
+                  if (parsed.chatId) {
+                    currentChatId = parsed.chatId;
+                    localStorage.setItem('currentChatId', currentChatId);
+                    updateChatInfo();
+                  }
+
+                  if (parsed.content) {
+                    bubbleContent.textContent += parsed.content;
+                    messagesContainer.scrollTop =
+                      messagesContainer.scrollHeight;
+                  }
+                } catch (e) {
+                  bubbleContent.textContent += data;
+                }
+              }
+            });
+
+            buffer = parts[parts.length - 1];
+          }
+        } catch (error) {
+          appendMessage('assistant', `Error: ${error.message}`);
+        } finally {
+          submitBtn.disabled = false;
+          abortController = null;
+        }
+      }
+
+      submitBtn.addEventListener('click', sendMessage);
+      promptInput.addEventListener('keydown', (event) => {
         if (event.key === 'Enter') {
-          document.getElementById('promptForm').requestSubmit();
+          event.preventDefault();
+          sendMessage();
         }
       });
     </script>

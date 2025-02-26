@@ -9,6 +9,7 @@ import { MailModule } from './mail/mail.module';
 import { ConversationModule } from './conversation/conversation.module';
 import { VectorStoreModule } from './vector-store/vector-store.module';
 import { LlmModule } from './llm/llm.module';
+import { MessageModule } from './message/message.module';
 import configuration from './config/configuration';
 
 @Module({
@@ -30,6 +31,7 @@ import configuration from './config/configuration';
     ConversationModule,
     VectorStoreModule,
     LlmModule,
+    MessageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

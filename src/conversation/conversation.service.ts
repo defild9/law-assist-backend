@@ -64,4 +64,32 @@ export class ConversationService {
       throw error;
     }
   }
+
+  async getUserConversations(
+    userId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    if (!userId) {
+      throw new NotFoundException('User ID is required');
+    }
+
+    const skip = (page - 1) * limit;
+    const [conversations, total] = await Promise.all([
+      this.conversationModel
+        .find({ userId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.conversationModel.countDocuments({ userId }),
+    ]);
+
+    return {
+      conversations,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
 }

@@ -5,6 +5,7 @@ import {
   Res,
   Get,
   Param,
+  Query,
   UseGuards,
   NotFoundException,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ import {
   ApiResponse,
   ApiBody,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { MessageService } from 'src/message/message.service';
 import { Types } from 'mongoose';
@@ -137,5 +139,21 @@ export class ConversationController {
       res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
       res.end();
     }
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get user conversations' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a paginated list of user conversations',
+  })
+  async getUserConversations(
+    @User('userId') userId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.conversationService.getUserConversations(userId, page, limit);
   }
 }

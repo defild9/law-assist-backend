@@ -5,12 +5,15 @@ import {
   Сonversation,
   ConversationDocument,
 } from 'src/schemas/conversation.schema';
+import { Message, MessageDocument } from 'src/schemas/message.schema';
 
 @Injectable()
 export class ConversationService {
   constructor(
     @InjectModel(Сonversation.name)
     private conversationModel: Model<ConversationDocument>,
+    @InjectModel(Message.name)
+    private readonly messageModel: Model<MessageDocument>,
   ) {}
 
   async createConversation(userId: string): Promise<ConversationDocument> {
@@ -63,5 +66,26 @@ export class ConversationService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async deleteConversation(conversationId: string, userId: string) {
+    if (!isValidObjectId(conversationId)) {
+      throw new NotFoundException('Invalid conversation id');
+    }
+
+    const conversation = await this.conversationModel
+      .findOneAndDelete({ _id: conversationId, userId })
+      .exec();
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation not found');
+    }
+
+    await this.messageModel.deleteMany({ chatId: conversation._id });
+
+    return {
+      success: true,
+      message: 'Conversation and its messages were successfully deleted',
+    };
   }
 }

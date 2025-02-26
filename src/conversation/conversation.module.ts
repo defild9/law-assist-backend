@@ -8,6 +8,7 @@ import {
   Сonversation,
   СonversationSchema,
 } from 'src/schemas/conversation.schema';
+import { Message, MessageSchema } from 'src/schemas/message.schema';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import {
     MongooseModule.forFeature([
       { name: Сonversation.name, schema: СonversationSchema },
     ]),
+    MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }]),
   ],
   controllers: [ConversationController],
   providers: [ConversationService],

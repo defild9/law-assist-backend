@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   NotFoundException,
+  Delete,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { LlmService } from 'src/llm/llm.service';
@@ -137,5 +138,29 @@ export class ConversationController {
       res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
       res.end();
     }
+  }
+
+  @Delete(':conversationId')
+  @ApiOperation({ summary: 'Delete a conversation and its messages' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Conversation and its messages were successfully deleted. Returns an object with success flag and a message.',
+    schema: {
+      example: {
+        success: true,
+        message: 'Conversation and its messages were successfully deleted',
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Conversation not found' })
+  async deleteConversation(
+    @User('userId') userId: string,
+    @Param('conversationId') conversationId: string,
+  ) {
+    return await this.conversationService.deleteConversation(
+      conversationId,
+      userId,
+    );
   }
 }

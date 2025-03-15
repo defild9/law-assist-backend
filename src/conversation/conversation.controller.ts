@@ -143,7 +143,11 @@ export class ConversationController {
       });
 
       let fullBotResponse = '';
-      const stream = this.llmService.generateStream(body.prompt);
+
+      const stream = this.llmService.generateStream(
+        conversation._id as Types.ObjectId,
+        body.prompt,
+      );
 
       for await (const chunk of stream) {
         res.write(

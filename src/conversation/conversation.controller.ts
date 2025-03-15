@@ -5,9 +5,10 @@ import {
   Res,
   Get,
   Param,
+  Query,
   UseGuards,
   NotFoundException,
-  Query,
+  Delete,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { LlmService } from 'src/llm/llm.service';
@@ -178,5 +179,45 @@ export class ConversationController {
       res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
       res.end();
     }
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get user conversations' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a paginated list of user conversations',
+  })
+  async getUserConversations(
+    @User('userId') userId: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.conversationService.getUserConversations(userId, page, limit);
+  }
+
+  @Delete(':conversationId')
+  @ApiOperation({ summary: 'Delete a conversation and its messages' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Conversation and its messages were successfully deleted. Returns an object with success flag and a message.',
+    schema: {
+      example: {
+        success: true,
+        message: 'Conversation and its messages were successfully deleted',
+      },
+    },
+  })
+  @ApiResponse({ status: 404, description: 'Conversation not found' })
+  async deleteConversation(
+    @User('userId') userId: string,
+    @Param('conversationId') conversationId: string,
+  ) {
+    return await this.conversationService.deleteConversation(
+      conversationId,
+      userId,
+    );
   }
 }

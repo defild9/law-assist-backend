@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { console } from 'inspector';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import {
   Сonversation,
@@ -94,6 +95,52 @@ export class ConversationService {
       page,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async searchConversationByMessageContent(
+    userId: string,
+    searchText: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
+    try {
+      const skip = (page - 1) * limit;
+
+      const results = await this.conversationModel.aggregate([
+        {
+          $lookup: {
+            from: 'messages',
+            localField: 'messages',
+            foreignField: '_id',
+            as: 'messages_details',
+          },
+        },
+        {
+          $match: {
+            userId: userId,
+            'messages_details.content': { $regex: searchText, $options: 'i' },
+          },
+        },
+        {
+          $facet: {
+            data: [{ $skip: skip }, { $limit: limit }],
+            totalCount: [{ $count: 'total' }],
+          },
+        },
+      ]);
+
+      const { data, totalCount } = results[0] || { data: [], totalCount: [] };
+      const total = totalCount[0] ? totalCount[0].total : 0;
+
+      return {
+        conversations: data,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      throw error;
+    }
   }
   async deleteConversation(conversationId: string, userId: string) {
     if (!isValidObjectId(conversationId)) {

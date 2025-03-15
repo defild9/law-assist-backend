@@ -38,6 +38,45 @@ export class ConversationController {
     private readonly conversationService: ConversationService,
   ) {}
 
+  @Get('search')
+  @ApiOperation({ summary: 'Search conversations by message content' })
+  @ApiQuery({
+    name: 'query',
+    description: 'Search string for message content',
+    required: true,
+    type: String,
+  })
+  @ApiQuery({
+    name: 'page',
+    description: 'Page number for pagination (default: 1)',
+    required: false,
+    type: Number,
+  })
+  @ApiQuery({
+    name: 'limit',
+    description: 'Number of items per page (default: 10)',
+    required: false,
+    type: Number,
+  })
+  async searchConversations(
+    @User('userId') userId: string,
+    @Query('query') query: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    if (!query) {
+      throw new NotFoundException('Query parameter is required');
+    }
+
+    console.log(userId);
+    return this.conversationService.searchConversationByMessageContent(
+      userId,
+      query,
+      page,
+      limit,
+    );
+  }
+
   @Get(':conversationId')
   @ApiOperation({ summary: 'Get conversation by ID' })
   @ApiResponse({ status: 200, description: 'Returns conversation data' })

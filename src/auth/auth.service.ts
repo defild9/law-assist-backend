@@ -46,7 +46,11 @@ export class AuthService {
       refreshToken,
     );
 
+    const userObj = user.toObject();
+    const { password, ...userWithoutPassword } = userObj;
+
     return {
+      user: userWithoutPassword,
       accessToken,
       refreshToken,
     };

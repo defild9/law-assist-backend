@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   HttpStatus,
+  GoneException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -154,32 +155,25 @@ export class UserService {
   }
 
   async verifyUserByEmail(token: string) {
-    try {
-      const user = await this.findByVerificationToken(token);
+    const user = await this.findByVerificationToken(token);
 
-      if (!user) {
-        return {
-          success: false,
-          error: 'Invalid or expired token.',
-        };
-      }
-
-      user.isEmailVerified = true;
-      user.verificationToken = null;
-      await user.save();
-
-      return {
-        success: true,
-        message: 'Email successfully verified.',
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: 'An unexpected error occurred while verifying email.',
-      };
+    if (!user) {
+      throw new BadRequestException('Invalid or expired verification token.');
     }
-  }
 
+    if (user.isEmailVerified) {
+      throw new GoneException('Email has already been verified.');
+    }
+
+    user.isEmailVerified = true;
+    user.verificationToken = null;
+    await user.save();
+
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Email successfully verified.',
+    };
+  }
   async resetPassword(token: string, newPassword: string) {
     try {
       const user = await this.findByVerificationToken(token);

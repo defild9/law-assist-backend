@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { ChromaClient, IEmbeddingFunction } from 'chromadb';
+import { ChromaClient, Collection, IEmbeddingFunction } from 'chromadb';
 import * as pdfParse from 'pdf-parse';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,36 +24,39 @@ class OpenAIEmbeddingFunction implements IEmbeddingFunction {
 
 @Injectable()
 export class VectorStoreService {
-  private vectorStore: Chroma;
-  private chromaClient: ChromaClient;
-  private embeddingFunction: OpenAIEmbeddingFunction;
+  private readonly chromaUrl: string;
+  private readonly openAIApiKey: string;
+  private readonly chromaClient: ChromaClient;
+  private readonly embeddingFunction: OpenAIEmbeddingFunction;
 
   constructor(private readonly configService: ConfigService) {
-    this.initialize();
+    this.chromaUrl =
+      this.configService.get('CHROMA_DB_URL') || 'http://localhost:8000';
+    this.openAIApiKey = this.configService.get<string>('OPENAI_API_KEY');
+    this.chromaClient = new ChromaClient({ path: this.chromaUrl });
+    this.embeddingFunction = new OpenAIEmbeddingFunction(this.openAIApiKey);
   }
 
-  private initialize() {
-    const chromaUrl =
-      this.configService.get('CHROMA_DB_URL') || 'http://localhost:8000';
-    const openAIApiKey = this.configService.get('OPENAI_API_KEY');
-
-    this.vectorStore = new Chroma(
+  private createChromaVectorStore(collectionName: string): Chroma {
+    return new Chroma(
       new OpenAIEmbeddings({
-        openAIApiKey,
+        openAIApiKey: this.openAIApiKey,
         modelName: 'text-embedding-ada-002',
       }),
       {
-        url: chromaUrl,
-        collectionName: 'documents-test',
+        url: this.chromaUrl,
+        collectionName,
       },
     );
-
-    this.chromaClient = new ChromaClient({ path: chromaUrl });
-    this.embeddingFunction = new OpenAIEmbeddingFunction(openAIApiKey);
   }
 
-  async similaritySearch(query: string, k: number = 3) {
-    return await this.vectorStore.similaritySearch(query, k);
+  async similaritySearch(
+    query: string,
+    k = 3,
+    collectionName = 'documents-test',
+  ) {
+    const vectorStore = this.createChromaVectorStore(collectionName);
+    return await vectorStore.similaritySearch(query, k);
   }
 
   async createCollection(collectionName: string) {
@@ -67,7 +70,7 @@ export class VectorStoreService {
     return await this.chromaClient.listCollections();
   }
 
-  async getCollectionByName(collectionName: string) {
+  async getCollectionByName(collectionName: string): Promise<Collection> {
     return await this.chromaClient.getOrCreateCollection({
       name: collectionName,
       embeddingFunction: this.embeddingFunction,
@@ -76,8 +79,8 @@ export class VectorStoreService {
 
   async addPdfToCollection(
     pdfBuffer: Buffer,
-    collectionName: string,
     fileName: string,
+    collectionName = 'documents-test',
   ) {
     try {
       const data = await pdfParse(pdfBuffer);

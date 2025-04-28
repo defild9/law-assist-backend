@@ -9,5 +9,6 @@ import { VectorStoreService } from 'src/vector-store/vector-store.service';
   imports: [MongooseModule.forFeature([{ name: Bot.name, schema: BotSchema }])],
   controllers: [BotsController],
   providers: [BotsService, VectorStoreService],
+  exports: [BotsService],
 })
 export class BotsModule {}

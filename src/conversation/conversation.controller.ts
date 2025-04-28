@@ -26,6 +26,7 @@ import { Types } from 'mongoose';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { User } from 'src/common/decorators/user.decorator';
 import { ConversationService } from './conversation.service';
+import { BotsService } from 'src/bots/bots.service';
 
 @ApiTags('Conversation')
 @UseGuards(JwtAuthGuard)
@@ -36,6 +37,7 @@ export class ConversationController {
     private readonly llmService: LlmService,
     private readonly messageService: MessageService,
     private readonly conversationService: ConversationService,
+    private readonly botService: BotsService,
   ) {}
 
   @Get('search')
@@ -142,11 +144,17 @@ export class ConversationController {
         parentId: (lastMessage?._id as Types.ObjectId) || new Types.ObjectId(),
       });
 
+      const collectionName = body.model
+        ? ((await this.botService.getBotByName(body.model))?.chromaCollection ??
+          process.env.DEFAULT_COLLECTION)
+        : process.env.DEFAULT_COLLECTION;
+
       let fullBotResponse = '';
 
       const stream = this.llmService.generateStream(
         conversation._id as Types.ObjectId,
         body.prompt,
+        collectionName,
       );
 
       for await (const chunk of stream) {

@@ -16,3 +16,12 @@ export class Сonversation {
 }
 
 export const СonversationSchema = SchemaFactory.createForClass(Сonversation);
+
+СonversationSchema.set('toJSON', {
+  virtuals: true,
+  versionKey: false,
+  transform: function (doc, ret) {
+    ret.id = ret._id;
+    delete ret._id;
+  },
+});

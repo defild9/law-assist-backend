@@ -9,6 +9,7 @@ import {
   СonversationSchema,
 } from 'src/schemas/conversation.schema';
 import { Message, MessageSchema } from 'src/schemas/message.schema';
+import { BotsModule } from 'src/bots/bots.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { Message, MessageSchema } from 'src/schemas/message.schema';
       { name: Сonversation.name, schema: СonversationSchema },
     ]),
     MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }]),
+    BotsModule,
   ],
   controllers: [ConversationController],
   providers: [ConversationService],

@@ -15,4 +15,11 @@ export class SendRequestDto {
     description: 'The id of chat',
   })
   chatId?: string;
+
+  @ApiProperty({
+    example: 'default-model',
+    description: 'This is name of model which you want to use',
+  })
+  @IsOptional()
+  model?: string;
 }

@@ -32,6 +32,15 @@ export class User extends Document {
   @Prop()
   verificationToken?: string;
 
+  @Prop({ type: Types.ObjectId, ref: 'Subscription' })
+  subscription?: Types.ObjectId;
+
+  @Prop({ default: null })
+  trialEndsAt?: Date;
+
+  @Prop({ default: null })
+  lastPaymentDate?: Date;
+
   readonly createdAt: Date;
   readonly updatedAt: Date;
 

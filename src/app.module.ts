@@ -12,6 +12,8 @@ import { LlmModule } from './llm/llm.module';
 import { MessageModule } from './message/message.module';
 import { BotsModule } from './bots/bots.module';
 import configuration from './config/configuration';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import configuration from './config/configuration';
     VectorStoreModule,
     LlmModule,
     MessageModule,
+    SubscriptionModule,
+    SubscriptionPlanModule,
     BotsModule,
   ],
   controllers: [AppController],

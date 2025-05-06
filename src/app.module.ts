@@ -12,6 +12,7 @@ import { LlmModule } from './llm/llm.module';
 import { MessageModule } from './message/message.module';
 import configuration from './config/configuration';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     LlmModule,
     MessageModule,
     SubscriptionModule,
+    SubscriptionPlanModule,
   ],
   controllers: [AppController],
   providers: [AppService],

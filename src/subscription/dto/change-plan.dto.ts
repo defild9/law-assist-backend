@@ -1,12 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty } from 'class-validator';
-import { SubscriptionPlan } from 'src/schemas/subscription.schema';
+import { IsMongoId } from 'class-validator';
 
 export class ChangePlanDto {
   @ApiProperty({
-    enum: ['free', 'basic', 'premium', 'enterprise'],
+    description: 'New subscription plan ID',
+    example: '60d21b4667d0d8992e610c85',
   })
-  @IsEnum(['free', 'basic', 'premium', 'enterprise'])
-  @IsNotEmpty()
-  plan: SubscriptionPlan;
+  @IsMongoId()
+  plan: string;
 }

@@ -1,26 +1,45 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsDateString } from 'class-validator';
-import { SubscriptionPlan } from 'src/schemas/subscription.schema';
+import {
+  IsMongoId,
+  IsOptional,
+  IsDateString,
+  IsBoolean,
+} from 'class-validator';
 
 export class CreateSubscriptionDto {
   @ApiProperty({
-    enum: ['free', 'basic', 'premium', 'enterprise'],
-    default: 'free',
+    description: 'Subscription plan ID',
+    example: '60d21b4667d0d8992e610c85',
   })
-  @IsEnum(['free', 'basic', 'premium', 'enterprise'])
-  plan: SubscriptionPlan;
+  @IsMongoId()
+  plan: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    description: 'Subscription start date (ISO string)',
+    type: String,
+    required: false,
+    example: '2025-05-07T00:00:00.000Z',
+  })
   @IsDateString()
   @IsOptional()
-  startDate?: Date;
+  startDate?: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({
+    description: 'Subscription end date (ISO string)',
+    type: String,
+    required: false,
+    example: '2025-06-07T00:00:00.000Z',
+  })
   @IsDateString()
   @IsOptional()
-  endDate?: Date;
+  endDate?: string;
 
-  @ApiProperty({ default: true, required: false })
+  @ApiProperty({
+    description: 'Whether the subscription should auto-renew',
+    default: true,
+    required: false,
+  })
+  @IsBoolean()
   @IsOptional()
   autoRenew?: boolean;
 }

@@ -1,8 +1,10 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { SubscriptionService } from 'src/subscription/subscription.service';
+import { SubscriptionPlan as SubscriptionPlanSchema } from 'src/schemas/subscription-plan.schema';
 import { UserService } from 'src/user/user.service';
 
+// TODO: need to change this guard
 @Injectable()
 export class SubscriptionGuard implements CanActivate {
   constructor(
@@ -29,18 +31,18 @@ export class SubscriptionGuard implements CanActivate {
     }
 
     const subscription = await this.subscriptionService.findActiveSubscription(
-      user._id,
+      user.userId,
     );
 
     if (!subscription) {
       return false;
     }
-
-    return this.checkPlan(subscription.plan, requiredPlan);
+    const userPlanName = (subscription.plan as SubscriptionPlanSchema).name;
+    return this.checkPlan(userPlanName, requiredPlan);
   }
 
   private checkPlan(userPlan: string, requiredPlan: string): boolean {
-    const planHierarchy = {
+    const planHierarchy: Record<string, number> = {
       free: 0,
       basic: 1,
       premium: 2,

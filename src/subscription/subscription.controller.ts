@@ -19,14 +19,13 @@ import {
   ApiBearerAuth,
   ApiBody,
 } from '@nestjs/swagger';
-import { Subscription } from 'rxjs';
 import { Roles } from 'src/auth/decorators/role.decorator';
-import { SubscriptionPlan } from 'src/auth/decorators/subscription.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { RoleGuard } from 'src/auth/guards/role.guard';
 import { ChangePlanDto } from 'src/subscription/dto/change-plan.dto';
 import { CreateSubscriptionDto } from 'src/subscription/dto/create-subscription.dto';
 import { SubscriptionService } from 'src/subscription/subscription.service';
+import { Subscription as SubscriptionEntity } from 'src/schemas/subscription.schema';
 
 @ApiTags('Subscriptions')
 @ApiBearerAuth()
@@ -40,7 +39,7 @@ export class SubscriptionController {
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Subscription created successfully',
-    type: Subscription,
+    type: SubscriptionEntity,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -55,10 +54,10 @@ export class SubscriptionController {
     @Request() req,
     @Body() createSubscriptionDto: CreateSubscriptionDto,
   ) {
-    return this.subscriptionService.create({
-      ...createSubscriptionDto,
-      user: req.user.userId,
-    });
+    return this.subscriptionService.create(
+      req.user.userId,
+      createSubscriptionDto,
+    );
   }
 
   @Get('me')
@@ -66,7 +65,7 @@ export class SubscriptionController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Subscription found',
-    type: Subscription,
+    type: SubscriptionEntity,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -82,7 +81,7 @@ export class SubscriptionController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Subscription found',
-    type: Subscription,
+    type: SubscriptionEntity,
   })
   @ApiResponse({
     status: HttpStatus.NOT_FOUND,
@@ -93,12 +92,11 @@ export class SubscriptionController {
   }
 
   @Patch(':id/plan')
-  @SubscriptionPlan('basic')
   @ApiOperation({ summary: 'Change subscription plan' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Plan changed successfully',
-    type: Subscription,
+    type: SubscriptionEntity,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
@@ -112,7 +110,7 @@ export class SubscriptionController {
   ) {
     if (req.user.role !== 'admin') {
       const subscription = await this.subscriptionService.findById(id);
-      if (subscription.user.toString() !== req.user.userId.toString()) {
+      if (subscription.user.toString() !== req.user.userId) {
         throw new ForbiddenException(
           'You can only change your own subscription',
         );
@@ -129,12 +127,12 @@ export class SubscriptionController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Subscription canceled',
-    type: Subscription,
+    type: SubscriptionEntity,
   })
   async cancel(@Param('id') id: string, @Request() req) {
     if (req.user.role !== 'admin') {
       const subscription = await this.subscriptionService.findById(id);
-      if (subscription.user.toString() !== req.user.userId.toString()) {
+      if (subscription.user.toString() !== req.user.userId) {
         throw new ForbiddenException(
           'You can only cancel your own subscription',
         );
@@ -149,12 +147,12 @@ export class SubscriptionController {
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Subscription reactivated',
-    type: Subscription,
+    type: SubscriptionEntity,
   })
   async reactivate(@Param('id') id: string, @Request() req) {
     if (req.user.role !== 'admin') {
       const subscription = await this.subscriptionService.findById(id);
-      if (subscription.user.toString() !== req.user.userId.toString()) {
+      if (subscription.user.toString() !== req.user.userId) {
         throw new ForbiddenException(
           'You can only reactivate your own subscription',
         );
@@ -164,7 +162,6 @@ export class SubscriptionController {
     return this.subscriptionService.updateSubscription(id, {
       status: 'active',
       autoRenew: true,
-      cancellationDate: null,
     });
   }
 

@@ -26,7 +26,11 @@ export class LlmService {
       streaming: true,
     });
   }
-  async *generateStream(chatId: Types.ObjectId, prompt: string) {
+  async *generateStream(
+    chatId: Types.ObjectId,
+    prompt: string,
+    collectionName = 'documents-test',
+  ) {
     const conversationMessages = await this.messageService.getMessagesByChat(
       chatId.toString(),
     );
@@ -34,10 +38,12 @@ export class LlmService {
       .map((msg) => `${msg.role}: ${msg.content}`)
       .join('\n');
 
+    console.log(collectionName);
     // Search for relevant documents using VectorStoreService
     const vectorResults = await this.vectorStoreService.similaritySearch(
       prompt,
       3,
+      collectionName,
     );
     const vectorContext = vectorResults
       .map((doc) => doc.pageContent)

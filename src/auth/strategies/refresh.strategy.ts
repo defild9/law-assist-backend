@@ -26,7 +26,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
     const refreshToken = req.body.refreshToken;
     const user = await this.userService.findById(payload.sub);
 
-    if (!user || user.refreshToken !== refreshToken) {
+    if (!user) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 

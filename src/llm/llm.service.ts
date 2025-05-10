@@ -38,11 +38,10 @@ export class LlmService {
       .map((msg) => `${msg.role}: ${msg.content}`)
       .join('\n');
 
-    console.log(collectionName);
     // Search for relevant documents using VectorStoreService
     const vectorResults = await this.vectorStoreService.similaritySearch(
       prompt,
-      3,
+      8,
       collectionName,
     );
     const vectorContext = vectorResults

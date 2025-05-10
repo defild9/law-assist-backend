@@ -5,7 +5,6 @@ export class UpdateUserDto {
   @ApiProperty({
     description: 'User email address',
     example: 'user@example.com',
-    required: true,
   })
   @IsEmail()
   @IsOptional()
@@ -14,7 +13,6 @@ export class UpdateUserDto {
   @ApiProperty({
     description: "URL to the user's profile picture",
     example: 'https://example.com/profile.jpg',
-    required: false,
   })
   @IsOptional()
   @IsString()

@@ -10,29 +10,78 @@ import {
   Patch,
   Delete,
   Get,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { put } from '@vercel/blob';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+} from '@nestjs/swagger';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { User } from 'src/common/decorators/user.decorator';
+import { FileInterceptor } from '@nestjs/platform-express';
+import multer, { memoryStorage } from 'multer';
 
 @ApiTags('user')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Patch(':id')
+  @Patch()
+  @UseInterceptors(
+    FileInterceptor('profile_picture', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 },
+    }),
+  )
   @ApiOperation({ summary: 'Update an existing user' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiResponse({ status: 409, description: 'Email is already in use' })
   @ApiResponse({ status: 500, description: 'Failed to update user' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        profile_picture: {
+          type: 'string',
+          format: 'binary',
+          description: 'Файл фото профиля',
+        },
+        email: { type: 'string', example: 'user@example.com' },
+      },
+    },
+  })
   async updateUser(
-    @Param('id') id: string,
+    @User('userId') userId: string,
     @Body() updateUserDto: UpdateUserDto,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
     try {
-      const updatedUser = await this.userService.updateUser(id, updateUserDto);
+      if (file) {
+        const key = `users/${userId}/${Date.now()}_${file.originalname}`;
+
+        const { url } = await put(key, file.buffer, {
+          contentType: file.mimetype,
+          access: 'public',
+        });
+        updateUserDto.profile_picture = url;
+      }
+      const updatedUser = await this.userService.updateUser(
+        userId,
+        updateUserDto,
+      );
 
       return {
         statusCode: HttpStatus.OK,
@@ -53,13 +102,13 @@ export class UserController {
     }
   }
 
-  @Delete(':id')
+  @Delete()
   @ApiOperation({ summary: 'Delete a user' })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async deleteUser(@Param('id') id: string) {
+  async deleteUser(@User('userId') userId: string) {
     try {
-      await this.userService.deleteUser(id);
+      await this.userService.deleteUser(userId);
       return {
         statusCode: HttpStatus.OK,
         message: 'User deleted successfully',

@@ -25,3 +25,13 @@ export const СonversationSchema = SchemaFactory.createForClass(Сonversation);
     delete ret._id;
   },
 });
+
+СonversationSchema.set('toObject', {
+  virtuals: true,
+  transform: (_doc, ret) => {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  },
+});

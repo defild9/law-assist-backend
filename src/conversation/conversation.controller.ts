@@ -9,6 +9,8 @@ import {
   UseGuards,
   NotFoundException,
   Delete,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { LlmService } from 'src/llm/llm.service';
@@ -63,8 +65,8 @@ export class ConversationController {
   async searchConversations(
     @User('userId') userId: string,
     @Query('query') query: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
     if (!query) {
       throw new NotFoundException('Query parameter is required');

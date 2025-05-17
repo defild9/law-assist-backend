@@ -14,6 +14,8 @@ import { BotsModule } from './bots/bots.module';
 import configuration from './config/configuration';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.module';
+import { VideoConsultationModule } from './video-consultation/video-consultation.module';
+import { LawyerProfileModule } from './lawyer-profile/lawyer-profile.module';
 
 @Module({
   imports: [
@@ -38,6 +40,8 @@ import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.mo
     SubscriptionModule,
     SubscriptionPlanModule,
     BotsModule,
+    VideoConsultationModule,
+    LawyerProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

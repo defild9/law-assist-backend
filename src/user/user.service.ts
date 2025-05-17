@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User } from 'src/schemas/user.schema';
+import { User, UserRole } from 'src/schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -202,5 +202,15 @@ export class UserService {
         error: 'An unexpected error occurred while verifying email.',
       };
     }
+  }
+  async findByRole(role: UserRole): Promise<User[]> {
+    return this.userModel
+      .find({ role })
+      .populate({
+        path: 'lawyerProfile',
+        model: 'LawyerProfile',
+        select: '-__v -user',
+      })
+      .exec();
   }
 }

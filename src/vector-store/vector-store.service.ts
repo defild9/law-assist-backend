@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { ChromaClient, Collection, IEmbeddingFunction } from 'chromadb';
-import * as pdfParse from 'pdf-parse';
+import pdfParse from 'pdf-parse';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { v4 as uuidv4 } from 'uuid';
 

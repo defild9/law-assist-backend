@@ -16,6 +16,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
 import { SubscriptionPlanModule } from './subscription-plan/subscription-plan.module';
 import { VideoConsultationModule } from './video-consultation/video-consultation.module';
 import { LawyerProfileModule } from './lawyer-profile/lawyer-profile.module';
+import { TemplateModule } from './template/template.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { LawyerProfileModule } from './lawyer-profile/lawyer-profile.module';
     BotsModule,
     VideoConsultationModule,
     LawyerProfileModule,
+    TemplateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

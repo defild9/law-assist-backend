@@ -7,13 +7,15 @@ export type BotDocument = HydratedDocument<Bot>;
 export class Bot extends Document {
   @Prop({ required: true, unique: true })
   name: string;
-
   //   TODO: array of collections
   @Prop({ required: true })
   chromaCollection: string;
 
   @Prop()
   description?: string;
+
+  @Prop()
+  botPrompt?: string;
 }
 
 export const BotSchema = SchemaFactory.createForClass(Bot);

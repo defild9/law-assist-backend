@@ -7,6 +7,7 @@ import {
   Param,
   Body,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +15,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { BotsService } from './bots.service';
 import { CreateBotDto } from './dto/create-bot.dto';
@@ -39,10 +41,25 @@ export class BotsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Retrieve all bots' })
+  @ApiOperation({
+    summary: 'Retrieve all bots with optional search and filter',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by name or description',
+  })
+  @ApiQuery({
+    name: 'collection',
+    required: false,
+    description: 'Filter by chromaCollection',
+  })
   @ApiResponse({ status: 200, description: 'List of bots' })
-  async getBots(): Promise<{ status: string; bots: Bot[] }> {
-    const bots = await this.botsService.getBots();
+  async getBots(
+    @Query('search') search?: string,
+    @Query('collection') collection?: string,
+  ): Promise<{ status: string; bots: Bot[] }> {
+    const bots = await this.botsService.getBots(search, collection);
     return { status: 'success', bots };
   }
 

@@ -26,8 +26,21 @@ export class BotsService {
     return bot.save();
   }
 
-  async getBots(): Promise<Bot[]> {
-    return this.botModel.find().exec();
+  async getBots(search?: string, collection?: string): Promise<Bot[]> {
+    const filter: any = {};
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (collection) {
+      filter.chromaCollection = collection;
+    }
+
+    return this.botModel.find(filter).exec();
   }
 
   async getBotByName(name: string): Promise<Bot | null> {

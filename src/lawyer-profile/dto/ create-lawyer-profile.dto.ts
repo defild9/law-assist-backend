@@ -5,9 +5,15 @@ import {
   IsInt,
   IsArray,
   ArrayNotEmpty,
+  IsMongoId,
 } from 'class-validator';
 
 export class CreateLawyerProfileDto {
+  @ApiProperty({ example: '67eafe726216126752d3af82' })
+  @IsMongoId()
+  @IsOptional()
+  userId: string;
+
   @ApiProperty({ example: 'Ivan' })
   @IsString()
   firstName: string;

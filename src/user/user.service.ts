@@ -15,7 +15,15 @@ import { ConfigService } from '@nestjs/config';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { MailService } from 'src/mail/mail.service';
 import { randomBytes } from 'crypto';
+import { FindUsersDto } from './dto/find-users.dto';
 
+export interface PaginatedResult<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 @Injectable()
 export class UserService {
   private readonly saltRounds: number;
@@ -209,6 +217,83 @@ export class UserService {
       .populate({
         path: 'lawyerProfile',
         model: 'LawyerProfile',
+        select: '-__v -user',
+      })
+      .exec();
+  }
+  async findAll(params: FindUsersDto): Promise<PaginatedResult<User>> {
+    const { search, role, page, limit } = params;
+    if (page < 1 || limit < 1) {
+      throw new BadRequestException('Page и limit должны быть >= 1');
+    }
+
+    const filter: any = {};
+    if (role) {
+      filter.role = role;
+    }
+
+    if (search) {
+      const regex = { $regex: search, $options: 'i' };
+      const orConditions: any[] = [{ email: regex }];
+
+      if (role === 'lawyer') {
+        orConditions.push(
+          { 'lawyerProfile.firstName': regex },
+          { 'lawyerProfile.lastName': regex },
+          { 'lawyerProfile.middleName': regex },
+          { 'lawyerProfile.lawFirm': regex },
+          { 'lawyerProfile.specialization': regex },
+          { 'lawyerProfile.licenseNumber': regex },
+        );
+      }
+
+      filter.$or = orConditions;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.userModel
+        .find(filter)
+        .populate({
+          path: 'lawyerProfile',
+          select: '-__v -user',
+        })
+        .skip(skip)
+        .limit(limit)
+        .select('-password -refreshToken -verificationToken')
+        .exec(),
+      this.userModel.countDocuments(filter).exec(),
+    ]);
+
+    const totalPages = Math.ceil(total / limit);
+    return { data, total, page, limit, totalPages };
+  }
+
+  async changeUserRole(
+    userId: string,
+    newRole: UserRole,
+  ): Promise<Omit<User, 'password' | 'refreshToken' | 'verificationToken'>> {
+    if (!userId) {
+      throw new BadRequestException('User ID must be provided');
+    }
+    if (!newRole) {
+      throw new BadRequestException('New role must be provided');
+    }
+
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.role = newRole;
+    await user.save();
+
+    return this.userModel
+      .findById(userId)
+      .select('-password -refreshToken -verificationToken')
+      .populate({
+        path: 'lawyerProfile',
         select: '-__v -user',
       })
       .exec();

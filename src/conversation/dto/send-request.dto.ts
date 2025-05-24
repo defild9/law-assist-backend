@@ -8,11 +8,12 @@ export class SendRequestDto {
   })
   prompt: string;
 
+  // @IsMongoId()
   @IsOptional()
-  @IsMongoId()
   @ApiProperty({
     example: '67bf15094193826f4efa026b',
     description: 'The id of chat',
+    required: false,
   })
   chatId?: string;
 
@@ -22,4 +23,16 @@ export class SendRequestDto {
   })
   @IsOptional()
   model?: string;
+
+  @ApiProperty({
+    type: 'array',
+    items: {
+      type: 'string',
+      format: 'binary',
+    },
+    required: false,
+    description: 'Images or PDF files',
+  })
+  @IsOptional()
+  files?: any;
 }

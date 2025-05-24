@@ -5,20 +5,28 @@ import {
   LawyerProfile,
   LawyerProfileDocument,
 } from 'src/schemas/lawyer-profile.schema';
+import { User, UserDocument } from 'src/schemas/user.schema';
 
 @Injectable()
 export class LawyerProfileService {
   constructor(
     @InjectModel(LawyerProfile.name)
     private profileModel: Model<LawyerProfileDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
   ) {}
 
   async create(
     userId: string,
     dto: Partial<LawyerProfile>,
   ): Promise<LawyerProfile> {
-    const created = new this.profileModel({ ...dto, user: userId });
-    return created.save();
+    const createdProfile = new this.profileModel({ ...dto, user: userId });
+    const savedProfile = await createdProfile.save();
+    await this.userModel.findByIdAndUpdate(userId, {
+      $set: { lawyerProfile: savedProfile._id },
+    });
+
+    return savedProfile;
   }
 
   async findByUser(userId: string): Promise<LawyerProfile> {

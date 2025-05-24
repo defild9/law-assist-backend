@@ -14,6 +14,7 @@ import { MemorySaver } from '@langchain/langgraph';
 import { TemplateGeneratorTool } from './tools/TemplateGenerator.tool';
 import { LegalTemplate } from 'src/schemas/legal-template.schema';
 import { InjectModel } from '@nestjs/mongoose';
+import { FilePartItem } from 'src/schemas/message.schema';
 
 @Injectable()
 export class LlmService {
@@ -53,6 +54,7 @@ export class LlmService {
     chatId: Types.ObjectId,
     prompt: string,
     collectionName = 'documents-test',
+    files?: FilePartItem[],
   ) {
     const conversationMessages = await this.messageService.getMessagesByChat(
       chatId.toString(),
@@ -61,28 +63,49 @@ export class LlmService {
       .map((msg) => `${msg.role}: ${msg.content}`)
       .join('\n');
 
-    // Search for relevant documents using VectorStoreService
-    const vectorResults = await this.vectorStoreService.similaritySearch(
-      prompt,
-      8,
-      collectionName,
-    );
-    const vectorContext = vectorResults
-      .map((doc) => doc.pageContent)
-      .join('\n\n');
+    const messages: any[] = [];
 
-    // Forming an extended query with the found context
-    const augmentedPrompt = `
-      Conversation context: ${conversationContext}
-    
-      Doucment context: ${vectorContext}
-      
-      Question: ${prompt}
-      
-      Answer: `;
+    if (files && files.length > 0) {
+      messages.push(
+        new HumanMessage({
+          content: files,
+        }),
+      );
+
+      messages.push(
+        new HumanMessage({
+          content: `
+            Conversation context: ${conversationContext}
+  
+            Question: ${prompt}
+  
+            Answer: `,
+        }),
+      );
+    } else {
+      const vectorResults = await this.vectorStoreService.similaritySearch(
+        prompt,
+        8,
+        collectionName,
+      );
+      const vectorContext = vectorResults
+        .map((doc) => doc.pageContent)
+        .join('\n\n');
+
+      const augmentedPrompt = `
+        Conversation context: ${conversationContext}
+  
+        Document context: ${vectorContext}
+  
+        Question: ${prompt}
+  
+        Answer: `;
+
+      messages.push(new HumanMessage({ content: augmentedPrompt }));
+    }
 
     const streamIter = await this.agent.stream(
-      { messages: [new HumanMessage(augmentedPrompt)] },
+      { messages },
       {
         streamMode: 'messages',
         configurable: { thread_id: chatId.toString() },
@@ -91,6 +114,7 @@ export class LlmService {
 
     for await (const [msg] of streamIter) {
       if (!isAIMessageChunk(msg)) continue;
+
       if (typeof msg.content === 'string') {
         yield msg.content;
       } else {

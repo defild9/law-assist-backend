@@ -18,6 +18,7 @@ import { VideoConsultationModule } from './video-consultation/video-consultation
 import { LawyerProfileModule } from './lawyer-profile/lawyer-profile.module';
 import { TemplateModule } from './template/template.module';
 import { FeedbackModule } from './feedback/feedback.module';
+import { VideoGateway } from './video/video.gateway';
 
 @Module({
   imports: [
@@ -48,6 +49,6 @@ import { FeedbackModule } from './feedback/feedback.module';
     FeedbackModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, VideoGateway],
 })
 export class AppModule {}

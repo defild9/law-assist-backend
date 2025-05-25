@@ -17,6 +17,9 @@ export class SubscriptionPlan extends Document {
 
   @Prop()
   trialPeriodDays?: number;
+
+  @Prop()
+  stripePriceId?: string;
 }
 
 export const SubscriptionPlanSchema =

@@ -21,4 +21,28 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   refreshToken?: string;
+
+  @ApiProperty({
+    description: 'User subscription ID',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  subscription?: string;
+
+  @ApiProperty({
+    description: 'User stripe ID',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  customerId?: string;
+
+  @ApiProperty({
+    description: 'Subscription status',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  subscriptionStatus?: string;
 }

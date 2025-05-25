@@ -5575,6 +5575,13 @@ strip-json-comments@~2.0.1:
   resolved "https://registry.yarnpkg.com/strip-json-comments/-/strip-json-comments-2.0.1.tgz#3c531942e908c2697c0ec344858c286c7ca0a60a"
   integrity sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ==
 
+stripe@^18.1.1:
+  version "18.1.1"
+  resolved "https://registry.yarnpkg.com/stripe/-/stripe-18.1.1.tgz#fba05fb268a4113bcd65d6563fb562c5d16e07cb"
+  integrity sha512-hlF0ripc2nJrihpsJZQDl3xirS7tpdpS7DlmSNLEDRW8j7Qr215y5DHOI3+aEY/lq6PG8y4GR1RZPtEoIoAs/g==
+  dependencies:
+    qs "^6.11.0"
+
 superagent@^9.0.1:
   version "9.0.2"
   resolved "https://registry.yarnpkg.com/superagent/-/superagent-9.0.2.tgz#a18799473fc57557289d6b63960610e358bdebc1"

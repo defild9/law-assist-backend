@@ -44,6 +44,9 @@ export class User extends Document {
   @Prop({ type: Types.ObjectId, ref: 'LawyerProfile', default: null })
   lawyerProfile?: Types.ObjectId;
 
+  @Prop({ default: null })
+  customerId: string;
+
   readonly createdAt: Date;
   readonly updatedAt: Date;
 

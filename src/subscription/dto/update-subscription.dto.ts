@@ -35,7 +35,7 @@ export class UpdateSubscriptionDto {
   })
   @IsDateString()
   @IsOptional()
-  endDate?: string;
+  endDate?: string | Date;
 
   @ApiProperty({
     description: 'Whether the subscription should auto-renew',

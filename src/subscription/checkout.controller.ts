@@ -77,8 +77,8 @@ export class CheckoutController {
         },
       ],
       mode: 'subscription',
-      cancel_url: `${process.env.BASE_URL}/dashboard/subscriptions`,
-      success_url: `${process.env.BASE_URL}/dashboard/subscriptions?checkout=success`,
+      cancel_url: `${process.env.BASE_URL}/pricing/`,
+      success_url: `${process.env.BASE_URL}/pricing/success`,
     });
 
     return {

@@ -47,8 +47,29 @@ export class SubscriptionPlanService {
     }
   }
 
-  findAll() {
-    return this.planModel.find().exec();
+  async findAll(page = 1, limit = 10, search?: string) {
+    const skip = (page - 1) * limit;
+
+    const query: any = {};
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      this.planModel.find(query).skip(skip).limit(limit).exec(),
+      this.planModel.countDocuments(query),
+    ]);
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {
@@ -121,5 +142,9 @@ export class SubscriptionPlanService {
       throw new NotFoundException('Plan not found');
     }
     return deleted;
+  }
+
+  async findByStripePriceId(stripePriceId: string) {
+    return this.planModel.findOne({ stripePriceId }).exec();
   }
 }

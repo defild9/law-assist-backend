@@ -11,6 +11,9 @@ import {
   HttpStatus,
   HttpCode,
   ForbiddenException,
+  DefaultValuePipe,
+  ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,6 +21,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/role.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
@@ -25,7 +29,10 @@ import { RoleGuard } from 'src/auth/guards/role.guard';
 import { ChangePlanDto } from 'src/subscription/dto/change-plan.dto';
 import { CreateSubscriptionDto } from 'src/subscription/dto/create-subscription.dto';
 import { SubscriptionService } from 'src/subscription/subscription.service';
-import { Subscription as SubscriptionEntity } from 'src/schemas/subscription.schema';
+import {
+  Subscription as SubscriptionEntity,
+  SubscriptionStatus,
+} from 'src/schemas/subscription.schema';
 
 @ApiTags('Subscriptions')
 @ApiBearerAuth()
@@ -175,5 +182,50 @@ export class SubscriptionController {
   })
   async remove(@Param('id') id: string) {
     return this.subscriptionService.deleteSubscription(id);
+  }
+
+  @Get()
+  // @Roles('admin')
+  @ApiOperation({
+    summary: 'Get all subscriptions with pagination (Admin only)',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Subscriptions retrieved successfully',
+    type: [SubscriptionEntity],
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['active', 'canceled', 'paused', 'expired'],
+    description: 'Filter by subscription status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search text for user email/name or plan name/description',
+  })
+  async findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('status') status?: SubscriptionStatus,
+    @Query('search') search?: string,
+  ) {
+    return this.subscriptionService.findAll(page, limit, status, search);
   }
 }

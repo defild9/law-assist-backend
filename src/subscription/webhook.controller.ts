@@ -2,6 +2,10 @@ import { Controller, Post, Req, Res, Injectable } from '@nestjs/common';
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { UserService } from '../user/user.service';
+import { SubscriptionService } from './subscription.service';
+import { SubscriptionPlanService } from 'src/subscription-plan/subscription-plan.service';
+import { CreateSubscriptionDto } from './dto/create-subscription.dto';
+import { SubscriptionStatus } from 'src/schemas/subscription.schema';
 
 const relevantEvents = new Set([
   'checkout.session.completed',
@@ -13,9 +17,13 @@ const relevantEvents = new Set([
 @Injectable()
 @Controller('webhook')
 export class WebhookController {
-  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  private readonly stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly subscriptionService: SubscriptionService,
+    private readonly subcriptionPlanService: SubscriptionPlanService,
+  ) {}
 
   @Post()
   async handleWebhook(@Req() req: Request, @Res() res: Response) {
@@ -79,7 +87,7 @@ export class WebhookController {
     customerId: string,
     isNewSubscription: boolean,
   ): Promise<void> {
-    const subscription =
+    const stripeSubscription =
       await this.stripe.subscriptions.retrieve(subscriptionId);
     const user = await this.userService.findByStripeCustomerId(customerId);
 
@@ -89,28 +97,54 @@ export class WebhookController {
     }
 
     const subscriptionData = {
-      id: subscription.id,
-      status: subscription.status,
-      priceId: subscription.items.data[0].price.id,
-      quantity: subscription.items.data[0].quantity,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      cancelAt: subscription.cancel_at
-        ? new Date(subscription.cancel_at * 1000)
+      id: stripeSubscription.id,
+      status: stripeSubscription.status,
+      priceId: stripeSubscription.items.data[0].price.id,
+      quantity: stripeSubscription.items.data[0].quantity,
+      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+      cancelAt: stripeSubscription.cancel_at
+        ? new Date(stripeSubscription.cancel_at * 1000)
         : null,
-      canceledAt: subscription.canceled_at
-        ? new Date(subscription.canceled_at * 1000)
+      canceledAt: stripeSubscription.canceled_at
+        ? new Date(stripeSubscription.canceled_at * 1000)
         : null,
-      currentPeriodStart: new Date(subscription.start_date * 1000),
-      currentPeriodEnd: new Date(subscription.ended_at * 1000),
-      createdAt: new Date(subscription.created * 1000),
-      endedAt: subscription.ended_at
-        ? new Date(subscription.ended_at * 1000)
+      currentPeriodStart: new Date(stripeSubscription.start_date * 1000),
+      currentPeriodEnd: new Date(stripeSubscription.ended_at * 1000),
+      createdAt: new Date(stripeSubscription.created * 1000),
+      endedAt: stripeSubscription.ended_at
+        ? new Date(stripeSubscription.ended_at * 1000)
         : null,
     };
 
+    const plan = await this.subcriptionPlanService.findByStripePriceId(
+      subscriptionData.priceId,
+    );
+    const existingSubscription =
+      await this.subscriptionService.findActiveSubscription(user.id);
+
+    if (isNewSubscription || !existingSubscription) {
+      const createDto: CreateSubscriptionDto = {
+        plan: plan.id,
+        startDate: subscriptionData.currentPeriodStart,
+        endDate: subscriptionData.currentPeriodEnd,
+        autoRenew: subscriptionData.cancelAtPeriodEnd,
+      };
+      await this.subscriptionService.create(user.id, createDto);
+    } else {
+      await this.subscriptionService.updateSubscription(
+        existingSubscription.id,
+        {
+          plan: plan.id,
+          endDate: subscriptionData.currentPeriodEnd,
+          autoRenew: subscriptionData.cancelAtPeriodEnd,
+          status: subscriptionData.status as SubscriptionStatus,
+        },
+      );
+    }
+
     await this.userService.updateUser(user.id, {
       subscription: subscriptionData.id,
-      subscriptionStatus: subscription.status,
+      subscriptionStatus: subscriptionData.status,
     });
   }
 }

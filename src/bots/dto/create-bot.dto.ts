@@ -26,4 +26,13 @@ export class CreateBotDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiProperty({
+    example: 'You are family lawyer problems consultations',
+    description: 'Optional promt of the bot',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  botPrompt?: string;
 }

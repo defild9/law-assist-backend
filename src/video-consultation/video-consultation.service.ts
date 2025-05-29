@@ -199,6 +199,11 @@ export class VideoConsultationService {
         {
           path: 'lawyer',
           select: 'email role lawyerProfile isEmailVerified',
+          populate: {
+            path: 'lawyerProfile',
+            model: 'LawyerProfile',
+            select: '-__v -user',
+          },
         },
       ])
       .exec();
@@ -207,9 +212,17 @@ export class VideoConsultationService {
       throw new NotFoundException('Consultation not found');
     }
 
+    const userId = String(
+      consultation.user?._id || consultation.user?.id || consultation.user,
+    );
+    const lawyerId = String(
+      consultation.lawyer?._id ||
+        consultation.lawyer?.id ||
+        consultation.lawyer,
+    );
+
     const isParticipant =
-      consultation.user.id.toString() === participantId ||
-      consultation.lawyer.id.toString() === participantId;
+      userId === participantId || lawyerId === participantId;
 
     if (!isParticipant) {
       throw new ForbiddenException(

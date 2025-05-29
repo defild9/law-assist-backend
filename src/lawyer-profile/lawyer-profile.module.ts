@@ -6,11 +6,13 @@ import {
   LawyerProfile,
   LawyerProfileSchema,
 } from 'src/schemas/lawyer-profile.schema';
+import { User, UserSchema } from 'src/schemas/user.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: LawyerProfile.name, schema: LawyerProfileSchema },
+      { name: User.name, schema: UserSchema },
     ]),
   ],
   providers: [LawyerProfileService],

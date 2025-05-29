@@ -11,6 +11,9 @@ import {
   Delete,
   DefaultValuePipe,
   ParseIntPipe,
+  BadRequestException,
+  UseInterceptors,
+  UploadedFiles,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { LlmService } from 'src/llm/llm.service';
@@ -22,6 +25,7 @@ import {
   ApiBody,
   ApiBearerAuth,
   ApiQuery,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { MessageService } from 'src/message/message.service';
 import { Types } from 'mongoose';
@@ -29,6 +33,9 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 import { User } from 'src/common/decorators/user.decorator';
 import { ConversationService } from './conversation.service';
 import { BotsService } from 'src/bots/bots.service';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { FilePartItem } from 'src/schemas/message.schema';
 
 @ApiTags('Conversation')
 @UseGuards(JwtAuthGuard)
@@ -121,16 +128,50 @@ export class ConversationController {
   })
   @ApiResponse({ status: 404, description: 'Conversation not found' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FilesInterceptor('files', 5, {
+      storage: memoryStorage(),
+      fileFilter: (req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'application/pdf'];
+        if (allowed.includes(file.mimetype)) cb(null, true);
+        else cb(new BadRequestException('Unsupported file type'), false);
+      },
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
   async stream(
     @User('userId') userId: string,
     @Body() body: SendRequestDto,
     @Res() res: Response,
+    @UploadedFiles() files: Express.Multer.File[],
   ) {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
     try {
+      const fileParts = Array.isArray(files)
+        ? files.map((file) => {
+            const b64 = file.buffer.toString('base64');
+            const isImage = file.mimetype.startsWith('image/');
+
+            return {
+              type: isImage ? 'image_url' : 'file',
+              ...(isImage
+                ? { image_url: { url: `data:${file.mimetype};base64,${b64}` } }
+                : {
+                    file: {
+                      file_data: `data:${file.mimetype};base64,${b64}`,
+                      filename: file.originalname,
+                    },
+                  }),
+            } as FilePartItem;
+          })
+        : undefined;
+
+      console.log(fileParts);
+
       const conversation = body.chatId
         ? ((await this.conversationService.findById(body.chatId, userId)) ??
           (await this.conversationService.createConversation(userId)))
@@ -144,6 +185,7 @@ export class ConversationController {
         role: 'user',
         content: body.prompt,
         parentId: (lastMessage?._id as Types.ObjectId) || new Types.ObjectId(),
+        files: fileParts || [],
       });
 
       const collectionName = body.model
@@ -157,6 +199,7 @@ export class ConversationController {
         conversation._id as Types.ObjectId,
         body.prompt,
         collectionName,
+        fileParts,
       );
 
       for await (const chunk of stream) {

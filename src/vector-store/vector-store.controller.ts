@@ -1,10 +1,14 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
+  HttpStatus,
   Param,
+  ParseIntPipe,
   Post,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -15,6 +19,7 @@ import {
   ApiParam,
   ApiBody,
   ApiConsumes,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { VectorStoreService } from './vector-store.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
@@ -33,7 +38,56 @@ export class VectorStoreController {
     description: 'Collections fetched successfully.',
   })
   async getCollections() {
-    return this.vectorStoreService.getCollections();
+    const collection = await this.vectorStoreService.getCollections();
+
+    return { status: 'success', collection };
+  }
+
+  @Get('collections-with-files')
+  @ApiOperation({ summary: 'Retrieve paginated collections with files' })
+  @ApiQuery({
+    name: 'searchQuery',
+    required: false,
+    description: 'Filter by collection name or file source',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default 1)',
+    schema: { default: 1 },
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default 10)',
+    schema: { default: 10 },
+  })
+  async getCollectionsWithFiles(
+    @Query('search') searchQuery?: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
+  ) {
+    const result = await this.vectorStoreService.getAllCollectionsWithFiles(
+      searchQuery,
+      page,
+      limit,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: `Collections fetched (page ${page})`,
+      ...result,
+    };
+  }
+
+  @Post('sync')
+  @ApiOperation({ summary: 'Synchronize Chroma collections with Mongo' })
+  @ApiResponse({
+    status: 200,
+    description: 'Sync completed successfully.',
+  })
+  async syncCollections() {
+    const result = await this.vectorStoreService.syncChromaWithMongo();
+    return { status: 'success', result };
   }
 
   @Get(':collectionName')
@@ -50,6 +104,18 @@ export class VectorStoreController {
   })
   async getCollectionByName(@Param('collectionName') collectionName: string) {
     return this.vectorStoreService.getCollectionByName(collectionName);
+  }
+
+  @ApiOperation({ summary: 'Delete a specific file from a collection' })
+  @Delete(':collectionName/files/:fileName')
+  async deleteFile(
+    @Param('collectionName') collectionName: string,
+    @Param('fileName') fileName: string,
+  ) {
+    return this.vectorStoreService.deleteFileFromCollection(
+      collectionName,
+      fileName,
+    );
   }
 
   @Post()
@@ -98,8 +164,8 @@ export class VectorStoreController {
   ) {
     return this.vectorStoreService.addPdfToCollection(
       file.buffer,
-      uploadPdfDto.collectionName,
       file.originalname,
+      uploadPdfDto.collectionName,
     );
   }
 
@@ -133,5 +199,11 @@ export class VectorStoreController {
   })
   async deleteCollection(@Param('collectionName') collectionName: string) {
     return this.vectorStoreService.deleteCollection(collectionName);
+  }
+
+  @Get(':name/files')
+  async getFiles(@Param('name') name: string) {
+    const files = await this.vectorStoreService.listFilesInCollection(name);
+    return { status: 'success', files };
   }
 }

@@ -37,7 +37,7 @@ export class LawyerProfileController {
   })
   @Post()
   async create(@Req() req, @Body() dto: CreateLawyerProfileDto) {
-    return this.svc.create(req.user.userId, dto);
+    return this.svc.create(dto.userId ? dto.userId : req.user.userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -62,6 +62,6 @@ export class LawyerProfileController {
   })
   @Put()
   async update(@Req() req, @Body() dto: UpdateLawyerProfileDto) {
-    return this.svc.update(req.user.userId, dto);
+    return this.svc.update(dto.userId ? dto.userId : req.user.userId, dto);
   }
 }

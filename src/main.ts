@@ -3,11 +3,16 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.setGlobalPrefix('api');
+  app.use('/api/webhook', express.raw({ type: 'application/json' }));
+
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
   app.useGlobalPipes(new ValidationPipe());
 
   const config = new DocumentBuilder()

@@ -8,6 +8,9 @@ import {
 import { UserModule } from 'src/user/user.module';
 import { SubscriptionController } from './subscription.controller';
 import { SubscriptionService } from './subscription.service';
+import { WebhookController } from './webhook.controller';
+import { CheckoutController } from './checkout.controller';
+import { SubscriptionPlanModule } from 'src/subscription-plan/subscription-plan.module';
 
 @Module({
   imports: [
@@ -15,9 +18,10 @@ import { SubscriptionService } from './subscription.service';
       { name: Subscription.name, schema: SubscriptionSchema },
     ]),
     UserModule,
+    SubscriptionPlanModule,
   ],
   providers: [SubscriptionService, SubscriptionGuard],
-  controllers: [SubscriptionController],
+  controllers: [SubscriptionController, WebhookController, CheckoutController],
   exports: [SubscriptionService, SubscriptionGuard],
 })
 export class SubscriptionModule {}

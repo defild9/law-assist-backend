@@ -221,6 +221,21 @@ export class UserService {
       })
       .exec();
   }
+
+  async findByStripeCustomerId(customerId: string): Promise<User> {
+    if (!customerId) {
+      throw new BadRequestException('Stripe customer ID must be provided');
+    }
+
+    const user = await this.userModel.findOne({ customerId }).exec();
+    if (!user) {
+      throw new NotFoundException(
+        `User not found with Stripe customer ID: ${customerId}`,
+      );
+    }
+
+    return user;
+  }
   async findAll(params: FindUsersDto): Promise<PaginatedResult<User>> {
     const { search, role, page, limit } = params;
     if (page < 1 || limit < 1) {

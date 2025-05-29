@@ -7,6 +7,9 @@ import {
   Body,
   Param,
   NotFoundException,
+  DefaultValuePipe,
+  ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,6 +17,7 @@ import {
   ApiResponse,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { SubscriptionPlanService } from './subscription-plan.service';
 import { CreateSubscriptionPlanDto } from './dto/create-subscription-plan.dto';
@@ -43,11 +47,47 @@ export class SubscriptionPlanController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Retrieve all subscription plans' })
-  @ApiResponse({ status: 200, description: 'List of subscription plans' })
-  async getPlans(): Promise<{ status: string; plans: SubscriptionPlan[] }> {
-    const plans = await this.subscriptionPlanService.findAll();
-    return { status: 'success', plans };
+  @ApiOperation({
+    summary: 'Retrieve paginated and searchable subscription plans',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of subscription plans with pagination',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    example: 'premium',
+  })
+  async getPlans(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('search') search?: string,
+  ): Promise<{
+    status: string;
+    data: SubscriptionPlan[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    const result = await this.subscriptionPlanService.findAll(
+      page,
+      limit,
+      search,
+    );
+
+    return {
+      status: 'success',
+      data: result.data,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+    };
   }
 
   @Get(':id')

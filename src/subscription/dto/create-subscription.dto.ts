@@ -22,7 +22,7 @@ export class CreateSubscriptionDto {
   })
   @IsDateString()
   @IsOptional()
-  startDate?: string;
+  startDate?: string | Date;
 
   @ApiProperty({
     description: 'Subscription end date (ISO string)',
@@ -32,7 +32,7 @@ export class CreateSubscriptionDto {
   })
   @IsDateString()
   @IsOptional()
-  endDate?: string;
+  endDate?: string | Date;
 
   @ApiProperty({
     description: 'Whether the subscription should auto-renew',

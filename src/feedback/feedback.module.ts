@@ -12,5 +12,6 @@ import { Feedback, FeedbackSchema } from 'src/schemas/feedback.schema';
   ],
   controllers: [FeedbackController],
   providers: [FeedbackService],
+  exports: [FeedbackService],
 })
 export class FeedbackModule {}

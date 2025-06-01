@@ -3,6 +3,8 @@ import { Document, Types } from 'mongoose';
 
 export type SubscriptionStatus = 'active' | 'canceled' | 'paused' | 'expired';
 
+export type SubscriptionDocument = Subscription & Document;
+
 @Schema({ timestamps: true })
 export class Subscription extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })

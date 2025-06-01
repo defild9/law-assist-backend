@@ -8,6 +8,7 @@ export enum ConsultationStatus {
   COMPLETED = 'completed',
 }
 
+export type VideoConsultationDocument = VideoConsultation & Document;
 @Schema({ timestamps: true })
 export class VideoConsultation extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })

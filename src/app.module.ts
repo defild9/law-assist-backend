@@ -19,6 +19,7 @@ import { LawyerProfileModule } from './lawyer-profile/lawyer-profile.module';
 import { TemplateModule } from './template/template.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { VideoGateway } from './video/video.gateway';
+import { StatisticModule } from './statistic/statistic.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { VideoGateway } from './video/video.gateway';
     LawyerProfileModule,
     TemplateModule,
     FeedbackModule,
+    StatisticModule,
   ],
   controllers: [AppController],
   providers: [AppService, VideoGateway],

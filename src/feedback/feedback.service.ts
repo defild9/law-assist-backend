@@ -14,6 +14,17 @@ import {
 } from 'src/schemas/feedback.schema';
 import { UpdateFeedbackDto } from './dto/update-feedback.dto';
 
+interface TagCount {
+  name: FeedbackTag;
+  value: number;
+}
+
+interface StatsResponse {
+  tagsStatus: TagCount[];
+  likePercent: number;
+  dislikePercent: number;
+}
+
 @Injectable()
 export class FeedbackService {
   constructor(
@@ -102,5 +113,81 @@ export class FeedbackService {
     }
     const result = await this.feedbackModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException(`Feedback ${id} not found`);
+  }
+
+  async getStatistics(days: number): Promise<StatsResponse> {
+    const allowedPeriods = [7, 30, 90];
+    if (!allowedPeriods.includes(days)) {
+      throw new BadRequestException(
+        `Invalid days parameter: ${days}. Available: ${allowedPeriods.join(', ')}.`,
+      );
+    }
+
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    // 1) Агрегація по тегах
+    const tagAgg = await this.feedbackModel.aggregate<{
+      _id: FeedbackTag;
+      count: number;
+    }>([
+      {
+        $match: {
+          createdAt: { $gte: cutoffDate },
+          tag: { $exists: true, $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: '$tag',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const tagsStatus: TagCount[] = tagAgg.map((item) => ({
+      name: item._id,
+      value: item.count,
+    }));
+
+    // 2) Агрегація по типу (like / dislike)
+    const typeAgg = await this.feedbackModel.aggregate<{
+      _id: FeedbackType;
+      count: number;
+    }>([
+      {
+        $match: {
+          createdAt: { $gte: cutoffDate },
+          type: { $exists: true, $ne: null },
+        },
+      },
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    let likeCount = 0;
+    let dislikeCount = 0;
+    for (const entry of typeAgg) {
+      if (entry._id === FeedbackType.LIKE) likeCount = entry.count;
+      if (entry._id === FeedbackType.DISLIKE) dislikeCount = entry.count;
+    }
+    const totalReactions = likeCount + dislikeCount;
+    const likePercent =
+      totalReactions > 0
+        ? parseFloat(((likeCount / totalReactions) * 100).toFixed(1))
+        : 0;
+    const dislikePercent =
+      totalReactions > 0
+        ? parseFloat(((dislikeCount / totalReactions) * 100).toFixed(1))
+        : 0;
+
+    return {
+      tagsStatus,
+      likePercent,
+      dislikePercent,
+    };
   }
 }

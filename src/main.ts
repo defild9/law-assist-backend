@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+// import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import * as express from 'express';
 
 async function bootstrap() {
@@ -15,17 +15,17 @@ async function bootstrap() {
   app.use(express.urlencoded({ extended: true }));
   app.useGlobalPipes(new ValidationPipe());
 
-  const config = new DocumentBuilder()
-    .setTitle('LawAssist')
-    .setDescription('LawAssist API description')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  // const config = new DocumentBuilder()
+  //   .setTitle('LawAssist')
+  //   .setDescription('LawAssist API description')
+  //   .setVersion('1.0')
+  //   .addBearerAuth()
+  //   .build();
 
   app.enableCors();
 
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, documentFactory);
+  // const documentFactory = () => SwaggerModule.createDocument(app, config);
+  // SwaggerModule.setup('api/docs', app, documentFactory);
 
   const configService = app.get(ConfigService);
   const port = configService.get<number>('PORT');

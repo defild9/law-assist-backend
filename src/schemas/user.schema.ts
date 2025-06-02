@@ -49,7 +49,6 @@ export class User extends Document {
 
   readonly createdAt: Date;
   readonly updatedAt: Date;
-
   readonly _id: Types.ObjectId;
 }
 

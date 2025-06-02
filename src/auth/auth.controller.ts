@@ -6,8 +6,18 @@ import {
   UseGuards,
   HttpStatus,
   Patch,
+  Get,
+  HttpCode,
+  Redirect,
+  Req,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiResponse,
+  ApiOkResponse,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 import { UserService } from 'src/user/user.service';
@@ -16,6 +26,7 @@ import { JwtAuthGuard } from './guards/jwt.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { GoogleOauthGuard } from './guards/google-auth.guard';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -115,5 +126,27 @@ export class AuthController {
       resetPasswordDto.token,
       resetPasswordDto.newPassword,
     );
+  }
+
+  @ApiOkResponse({
+    description: 'Google auth',
+    type: Boolean,
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('google')
+  @UseGuards(GoogleOauthGuard)
+  async googleAuth() {}
+
+  @ApiOkResponse({
+    description: 'Google',
+    type: Boolean,
+  })
+  @HttpCode(HttpStatus.OK)
+  @Get('google/callback')
+  @UseGuards(GoogleOauthGuard)
+  @Redirect()
+  async googleAuthReturn(@Req() req: Request & { user: CreateUserDto }) {
+    await this.authService.handleGoogleAuth(req.user);
+    return { url: process.env.FRONT_URL };
   }
 }

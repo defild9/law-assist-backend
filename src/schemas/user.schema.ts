@@ -45,6 +45,9 @@ export class User extends Document {
   lawyerProfile?: Types.ObjectId;
 
   @Prop({ default: null })
+  isOAuthRegister?: boolean;
+
+  @Prop({ default: null })
   customerId: string;
 
   readonly createdAt: Date;

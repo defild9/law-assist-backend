@@ -9,6 +9,9 @@ import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh.strategy';
 import { MailModule } from 'src/mail/mail.module';
+import { ConfigModule } from '@nestjs/config';
+import googleOauthConfig from './config/google-oauth.config';
+import { GoogleStrategy } from './strategies/google.strategy';
 
 @Module({
   imports: [
@@ -18,6 +21,7 @@ import { MailModule } from 'src/mail/mail.module';
       signOptions: { expiresIn: process.env.JWT_ACCESS_EXPIRATION },
     }),
     MailModule,
+    ConfigModule.forFeature(googleOauthConfig),
   ],
   controllers: [AuthController],
   providers: [
@@ -26,6 +30,7 @@ import { MailModule } from 'src/mail/mail.module';
     LocalStrategy,
     JwtStrategy,
     RefreshTokenStrategy,
+    GoogleStrategy,
   ],
 })
 export class AuthModule {}

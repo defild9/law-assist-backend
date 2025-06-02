@@ -10,6 +10,7 @@ import { User } from 'src/schemas/user.schema';
 import { randomBytes } from 'crypto';
 import { MailService } from 'src/mail/mail.service';
 import { use } from 'passport';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -106,5 +107,37 @@ export class AuthService {
   async logout(userId: string) {
     await this.userService.updateRefreshToken(userId, null);
     return { message: 'Logged out successfully' };
+  }
+
+  async validateGoogleUser(googleUser: CreateUserDto) {
+    const user = await this.userService.findByEmail(googleUser.email);
+    if (user) return true;
+    return this.userService.createUser(googleUser);
+  }
+  async handleGoogleAuth(user: CreateUserDto): Promise<string> {
+    const existingUser = await this.userService.findByEmail(user.email ?? '');
+
+    if (existingUser) {
+      const { accessToken } = await this.login(existingUser);
+      return accessToken;
+    } else {
+      const createdUser = await this.userService.createUser({
+        email: user.email ?? '',
+        isOAuthRegister: true,
+        profile_picture: user.profile_picture,
+        password: '',
+      });
+
+      const payload = {
+        email: createdUser.email,
+        sub: createdUser._id,
+        role: createdUser.role,
+      };
+      const [accessToken] = await this.jwtService.signAsync(payload, {
+        secret: process.env.JWT_ACCESS_SECRET,
+        expiresIn: process.env.JWT_ACCESS_EXPIRATION,
+      });
+      return accessToken;
+    }
   }
 }

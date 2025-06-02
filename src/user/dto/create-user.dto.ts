@@ -4,6 +4,7 @@ import {
   IsOptional,
   Length,
   IsStrongPassword,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -36,4 +37,13 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   profile_picture?: string;
+
+  @ApiProperty({
+    description: 'Is OAuth register',
+    example: false,
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isOAuthRegister?: boolean;
 }

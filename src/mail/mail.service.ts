@@ -1,5 +1,8 @@
 import * as nodemailer from 'nodemailer';
 import { Injectable, Logger } from '@nestjs/common';
+import { IEmailTemplate } from './templates/email-template.interface';
+import { VerificationEmailTemplate } from './templates/verification-email.template';
+import { ResetPasswordEmailTemplate } from './templates/reset-password-email.template';
 
 @Injectable()
 export class MailService {
@@ -18,44 +21,38 @@ export class MailService {
     });
   }
 
-  async sendVerificationEmail(email: string, token: string) {
+  private async sendEmail(
+    email: string,
+    strategy: IEmailTemplate,
+    actionUrl: string,
+  ) {
     try {
-      const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`;
-
       await this.transporter.sendMail({
-        from: `"Email Verification" <${process.env.SMTP_USER}>`,
+        from: `"LawAssist 🚀" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: 'Email Verification',
-        text: `Click the link to verify your email: ${verificationUrl}`,
-        html: `<p>Click <a href="${verificationUrl}">here</a> to verify your email.</p>`,
+        subject: strategy.subject,
+        text: strategy.getText(actionUrl),
+        html: strategy.getHtml(actionUrl),
       });
-
-      this.logger.log(`Verification email sent to ${email}`);
+      this.logger.log(`Email "${strategy.subject}" sent to ${email}`);
     } catch (error) {
-      this.logger.error(`Error sending verification email to ${email}:`, error);
-      throw new Error('Failed to send verification email.');
+      this.logger.error(
+        `Error sending "${strategy.subject}" email to ${email}:`,
+        error,
+      );
+      throw new Error(`Не вдалося надіслати лист: ${strategy.subject}`);
     }
   }
 
+  async sendVerificationEmail(email: string, token: string) {
+    const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`;
+    const template = new VerificationEmailTemplate();
+    await this.sendEmail(email, template, verificationUrl);
+  }
+
   async sendResetPasswordEmail(email: string, token: string) {
-    try {
-      const resetUrl = `${process.env.APP_URL}/reset-password?token=${token}`;
-
-      await this.transporter.sendMail({
-        from: `"Password Reset" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject: 'Password Reset Request',
-        text: `Click the link to reset your password: ${resetUrl}`,
-        html: `<p>Click <a href="${resetUrl}">here</a> to reset your password.</p>`,
-      });
-
-      this.logger.log(`Password reset email sent to ${email}`);
-    } catch (error) {
-      this.logger.error(
-        `Error sending password reset email to ${email}:`,
-        error,
-      );
-      throw new Error('Failed to send password reset email.');
-    }
+    const resetUrl = `${process.env.APP_URL}/reset-password?token=${token}`;
+    const template = new ResetPasswordEmailTemplate();
+    await this.sendEmail(email, template, resetUrl);
   }
 }

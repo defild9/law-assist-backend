@@ -50,14 +50,7 @@ export class VectorStoreService {
     this.chromaUrl =
       this.configService.get('CHROMA_DB_URL') || 'http://localhost:8000';
     this.openAIApiKey = this.configService.get<string>('OPENAI_API_KEY');
-    this.chromaClient = new ChromaClient({
-      path: this.chromaUrl,
-      auth: {
-        provider: 'token',
-        credentials: this.configService.get('CHROMA_TOKEN'),
-        tokenHeaderType: 'AUTHORIZATION',
-      },
-    });
+    this.chromaClient = new ChromaClient({ path: this.chromaUrl });
     this.embeddingFunction = new OpenAIEmbeddingFunction(this.openAIApiKey);
   }
 

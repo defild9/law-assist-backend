@@ -5,6 +5,7 @@ import {
   HumanMessage,
   isAIMessageChunk,
   MessageContentComplex,
+  SystemMessage,
 } from '@langchain/core/messages';
 import { VectorStoreService } from 'src/vector-store/vector-store.service';
 import { MessageService } from 'src/message/message.service';
@@ -55,7 +56,21 @@ export class LlmService {
     prompt: string,
     collectionName = 'documents-test',
     files?: FilePartItem[],
+    botPromt?: string,
   ) {
+    const defaultBotPrompt = `
+Ви — досвідчений юридичний консультант із глибокими знаннями українського права. Ваше завдання — давати чіткі, вичерпні й обґрунтовані відповіді на запитання користувача. У відповіді:
+1. Посилайтеся на відповідні статті законів або нормативні акти (де це доречно).
+2. Використовуйте просту мову, але зберігайте юридичну точність.
+3. Якщо питання стосується оформлення документів (договір, позовна заява, довіреність тощо), наведіть приклад структури та ключові пункти.
+4. Уникайте розлогих виправдань — концентруйтеся на суті, але за потреби давайте короткі пояснення.
+5. Якщо інформації недостатньо для однозначної відповіді, зазначайте, що потрібні додаткові дані (наприклад, юрисдикція, дати, конкретні обставини).
+
+Після отримання запиту генеруйте відповідь, виходячи з наведених вище правил.
+  `.trim();
+
+    const effectiveBotPrompt =
+      botPromt && botPromt.trim() !== '' ? botPromt : defaultBotPrompt;
     const conversationMessages = await this.messageService.getMessagesByChat(
       chatId.toString(),
     );
@@ -64,6 +79,7 @@ export class LlmService {
       .join('\n');
 
     const messages: any[] = [];
+    messages.push(new SystemMessage({ content: effectiveBotPrompt }));
 
     if (files && files.length > 0) {
       messages.push(
@@ -88,6 +104,7 @@ export class LlmService {
         8,
         collectionName,
       );
+
       const vectorContext = vectorResults
         .map((doc) => doc.pageContent)
         .join('\n\n');

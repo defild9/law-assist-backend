@@ -170,12 +170,16 @@ export class ConversationController {
           })
         : undefined;
 
-      console.log(fileParts);
-
       const conversation = body.chatId
         ? ((await this.conversationService.findById(body.chatId, userId)) ??
-          (await this.conversationService.createConversation(userId)))
-        : await this.conversationService.createConversation(userId);
+          (await this.conversationService.createConversation(
+            userId,
+            body.prompt,
+          )))
+        : await this.conversationService.createConversation(
+            userId,
+            body.prompt,
+          );
 
       const lastMessage = await this.messageService.getLastMessage(
         conversation._id as Types.ObjectId,
@@ -188,10 +192,13 @@ export class ConversationController {
         files: fileParts || [],
       });
 
-      const collectionName = body.model
-        ? ((await this.botService.getBotByName(body.model))?.chromaCollection ??
-          process.env.DEFAULT_COLLECTION)
-        : process.env.DEFAULT_COLLECTION;
+      const bot = body.model
+        ? await this.botService.getBotByName(body.model)
+        : null;
+
+      const collectionName =
+        bot?.chromaCollection ?? process.env.DEFAULT_COLLECTION;
+      const botPrompt = bot?.botPrompt;
 
       let fullBotResponse = '';
 
@@ -200,6 +207,7 @@ export class ConversationController {
         body.prompt,
         collectionName,
         fileParts,
+        botPrompt,
       );
 
       for await (const chunk of stream) {

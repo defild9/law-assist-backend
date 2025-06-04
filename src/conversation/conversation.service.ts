@@ -17,8 +17,11 @@ export class ConversationService {
     private readonly messageModel: Model<MessageDocument>,
   ) {}
 
-  async createConversation(userId: string): Promise<ConversationDocument> {
-    const conversation = new this.conversationModel({ userId });
+  async createConversation(
+    userId: string,
+    promt: string,
+  ): Promise<ConversationDocument> {
+    const conversation = new this.conversationModel({ userId, title: promt });
     return conversation.save();
   }
 

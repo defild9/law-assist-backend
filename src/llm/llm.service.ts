@@ -69,6 +69,7 @@ export class LlmService {
 Після отримання запиту генеруйте відповідь, виходячи з наведених вище правил.
   `.trim();
 
+    const isGenerate = prompt.includes('Згенеруй');
     const effectiveBotPrompt =
       botPromt && botPromt.trim() !== '' ? botPromt : defaultBotPrompt;
     const conversationMessages = await this.messageService.getMessagesByChat(
@@ -79,7 +80,9 @@ export class LlmService {
       .join('\n');
 
     const messages: any[] = [];
-    messages.push(new SystemMessage({ content: effectiveBotPrompt }));
+    if (!isGenerate) {
+      messages.push(new SystemMessage({ content: effectiveBotPrompt }));
+    }
 
     if (files && files.length > 0) {
       messages.push(

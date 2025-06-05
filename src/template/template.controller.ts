@@ -16,6 +16,7 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -29,19 +30,26 @@ import {
   ApiOkResponse,
   ApiBody,
   ApiConsumes,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { TemplateService } from './template.service';
 import { CreateTemplateDto } from './dto/create-template.dto';
 import { UpdateTemplateDto } from './dto/update-template.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConvertFileDto } from './dto/convert-file.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { Roles } from 'src/auth/decorators/role.decorator';
+import { RoleGuard } from 'src/auth/guards/role.guard';
 
 @ApiTags('Templates')
+@UseGuards(JwtAuthGuard, RoleGuard)
+@ApiBearerAuth()
 @Controller('templates')
 export class TemplateController {
   constructor(private readonly templateService: TemplateService) {}
 
   @Post()
+  @Roles('admin', 'lawyer')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiOperation({ summary: 'Create a new template' })
   @ApiCreatedResponse({ description: 'Template created successfully' })
@@ -66,6 +74,7 @@ export class TemplateController {
   }
 
   @Get()
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Get all templates' })
   @ApiOkResponse({ description: 'Templates fetched successfully' })
   async getAll(
@@ -77,6 +86,7 @@ export class TemplateController {
   }
 
   @Get(':id')
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Get template by ID' })
   @ApiParam({ name: 'id', description: 'Template ID' })
   @ApiOkResponse({ description: 'Template found' })
@@ -99,6 +109,7 @@ export class TemplateController {
   }
 
   @Get('title/:title')
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Get template by title' })
   @ApiParam({ name: 'title', description: 'Template title' })
   async getByTitle(@Param('title') title: string) {
@@ -119,6 +130,7 @@ export class TemplateController {
   }
 
   @Patch(':id')
+  @Roles('admin', 'lawyer')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiOperation({ summary: 'Update template by ID' })
   @ApiParam({ name: 'id', description: 'Template ID' })
@@ -141,6 +153,7 @@ export class TemplateController {
   }
 
   @Delete(':id')
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Delete template by ID' })
   @ApiParam({ name: 'id', description: 'Template ID' })
   async delete(@Param('id') id: string) {
@@ -160,6 +173,7 @@ export class TemplateController {
   }
 
   @Post('convert')
+  @Roles('admin', 'lawyer')
   @UseInterceptors(
     FileInterceptor('file', {
       fileFilter: (req, file, cb) => {

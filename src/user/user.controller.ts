@@ -41,15 +41,18 @@ import { UserRole } from 'src/schemas/user.schema';
 import { FindUsersDto } from './dto/find-users.dto';
 import { ChangeUserRoleDto } from './dto/change-user-role.dto';
 import { DeleteUserDto } from './dto/delete-user.dto';
+import { RoleGuard } from 'src/auth/guards/role.guard';
+import { Roles } from 'src/auth/decorators/role.decorator';
 
 @ApiTags('user')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RoleGuard)
 @ApiBearerAuth()
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
+  @Roles('admin')
   @ApiOperation({
     summary: 'Get a paginated list of users with optional filters',
   })
@@ -84,6 +87,7 @@ export class UserController {
   }
 
   @Patch(':id/change-role')
+  @Roles('admin')
   @ApiOperation({ summary: 'Change a user’s role' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiBadRequestResponse({ description: 'Missing or invalid parameters' })

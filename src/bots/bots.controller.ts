@@ -8,6 +8,7 @@ import {
   Body,
   NotFoundException,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -16,17 +17,24 @@ import {
   ApiParam,
   ApiBody,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { BotsService } from './bots.service';
 import { CreateBotDto } from './dto/create-bot.dto';
 import { Bot } from 'src/schemas/bot.schema';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { RoleGuard } from 'src/auth/guards/role.guard';
+import { Roles } from 'src/auth/decorators/role.decorator';
 
 @ApiTags('bots')
+@UseGuards(JwtAuthGuard, RoleGuard)
+@ApiBearerAuth()
 @Controller('bots')
 export class BotsController {
   constructor(private readonly botsService: BotsService) {}
 
   @Post()
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Create a new bot' })
   @ApiResponse({
     status: 201,
@@ -64,6 +72,7 @@ export class BotsController {
   }
 
   @Put(':id')
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Update an existing bot by ID' })
   @ApiParam({ name: 'id', description: 'Bot ID', type: String })
   @ApiBody({ type: CreateBotDto })
@@ -81,6 +90,7 @@ export class BotsController {
   }
 
   @Delete(':id')
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Delete a bot by ID' })
   @ApiParam({ name: 'id', description: 'Bot ID', type: String })
   @ApiResponse({ status: 200, description: 'Bot deleted successfully' })

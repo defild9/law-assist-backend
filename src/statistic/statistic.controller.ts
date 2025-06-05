@@ -1,16 +1,27 @@
-import { Controller, Get, Query, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiQuery,
   ApiOkResponse,
   ApiBadRequestResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { FeedbackService } from 'src/feedback/feedback.service';
 import { StatisticService } from './statistic.service';
 import { CombinedStatsDto } from './dto/combined-stats.dto';
-
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { RoleGuard } from 'src/auth/guards/role.guard';
+import { Roles } from 'src/auth/decorators/role.decorator';
 @ApiTags('Statistic')
+@UseGuards(JwtAuthGuard, RoleGuard)
+@ApiBearerAuth()
 @Controller('statistic')
 export class StatisticController {
   constructor(
@@ -19,6 +30,7 @@ export class StatisticController {
   ) {}
 
   @Get()
+  @Roles('admin', 'lawyer')
   @ApiOperation({
     summary:
       'Get combined statistics (feedback, activity, summary) for a given period',

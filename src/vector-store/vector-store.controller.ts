@@ -10,6 +10,7 @@ import {
   Post,
   Query,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import {
@@ -20,13 +21,17 @@ import {
   ApiBody,
   ApiConsumes,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { VectorStoreService } from './vector-store.service';
 import { CreateCollectionDto } from './dto/create-collection.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadPdfDto } from './dto/upload-pdf.dto';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
 
 @ApiTags('bot-vector-store')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 @Controller('bot-vector-store')
 export class VectorStoreController {
   constructor(private readonly vectorStoreService: VectorStoreService) {}

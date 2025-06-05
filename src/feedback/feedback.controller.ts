@@ -38,6 +38,8 @@ import {
   FeedbackTag,
   FeedbackType,
 } from 'src/schemas/feedback.schema';
+import { RoleGuard } from 'src/auth/guards/role.guard';
+import { Roles } from 'src/auth/decorators/role.decorator';
 
 class PaginatedFeedback {
   data: Feedback[];
@@ -48,7 +50,7 @@ class PaginatedFeedback {
 
 @ApiTags('Feedback')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RoleGuard)
 @Controller('feedback')
 export class FeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}
@@ -76,6 +78,7 @@ export class FeedbackController {
   }
 
   @Get()
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Get all feedback (paginated, filter by tag/type)' })
   @ApiQuery({
     name: 'page',
@@ -121,6 +124,7 @@ export class FeedbackController {
   }
 
   @Get(':id')
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Get a single feedback by ID' })
   @ApiParam({ name: 'id', description: 'Feedback ID' })
   @ApiOkResponse({ description: 'Feedback fetched', type: Feedback })
@@ -140,6 +144,7 @@ export class FeedbackController {
   }
 
   @Get('message/:messageId')
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Get feedback for a specific message (paginated)' })
   @ApiParam({ name: 'messageId', description: 'Message ID' })
   @ApiQuery({ name: 'page', required: false, type: Number })
@@ -167,6 +172,7 @@ export class FeedbackController {
   }
 
   @Patch(':id')
+  @Roles('admin', 'lawyer')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   @ApiOperation({ summary: 'Update a feedback entry' })
   @ApiParam({ name: 'id', description: 'Feedback ID' })
@@ -191,6 +197,7 @@ export class FeedbackController {
   }
 
   @Delete(':id')
+  @Roles('admin', 'lawyer')
   @ApiOperation({ summary: 'Delete a feedback entry' })
   @ApiParam({ name: 'id', description: 'Feedback ID' })
   @ApiOkResponse({ description: 'Feedback deleted successfully' })

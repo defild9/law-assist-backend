@@ -10,6 +10,7 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -18,13 +19,18 @@ import {
   ApiParam,
   ApiBody,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { SubscriptionPlanService } from './subscription-plan.service';
 import { CreateSubscriptionPlanDto } from './dto/create-subscription-plan.dto';
 import { UpdateSubscriptionPlanDto } from './dto/update-subscription-plan.dto';
 import { SubscriptionPlan } from 'src/schemas/subscription-plan.schema';
+import { JwtAuthGuard } from 'src/auth/guards/jwt.guard';
+import { RoleGuard } from 'src/auth/guards/role.guard';
+import { Roles } from 'src/auth/decorators/role.decorator';
 
 @ApiTags('subscription-plans')
+@ApiBearerAuth()
 @Controller('subscription-plans')
 export class SubscriptionPlanController {
   constructor(
@@ -32,6 +38,8 @@ export class SubscriptionPlanController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Create a new subscription plan' })
   @ApiBody({ type: CreateSubscriptionPlanDto })
   @ApiResponse({
@@ -91,6 +99,8 @@ export class SubscriptionPlanController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Retrieve a subscription plan by ID' })
   @ApiParam({ name: 'id', description: 'Plan ID', type: String })
   @ApiResponse({ status: 200, description: 'Subscription plan details' })
@@ -106,6 +116,8 @@ export class SubscriptionPlanController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Update an existing subscription plan' })
   @ApiParam({ name: 'id', description: 'Plan ID', type: String })
   @ApiBody({ type: UpdateSubscriptionPlanDto })
@@ -124,6 +136,8 @@ export class SubscriptionPlanController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RoleGuard)
+  @Roles('admin')
   @ApiOperation({ summary: 'Delete a subscription plan by ID' })
   @ApiParam({ name: 'id', description: 'Plan ID', type: String })
   @ApiResponse({ status: 200, description: 'Subscription plan deleted' })
